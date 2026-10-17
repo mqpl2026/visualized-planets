@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>凌星法寻找系外行星 · 原理可视化</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<style>
+:root{
+  --bg:#070a12; --bg2:#0b1020; --panel:#0f1526; --panel2:#141c31;
+  --line:#1e2a45; --line2:#2b3a5e;
+  --txt:#dce4f5; --txt2:#8f9dbd; --txt3:#5d6b8c;
+  --accent:#ffd166; --accent2:#4fd6ff;
+  --hot:#ff6b6b; --warm:#ffb454; --cool:#4fd6ff; --good:#4ade80;
+  --mono:'JetBrains Mono','Consolas','Courier New',monospace;
+  --sans:'Noto Sans SC','Microsoft YaHei','PingFang SC',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:
+    radial-gradient(1200px 700px at 78% -10%, rgba(255,209,102,.14), transparent 60%),
+    radial-gradient(900px 600px at 8% 110%, rgba(79,214,255,.12), transparent 60%),
+    var(--bg);
+  color:var(--txt); font-family:var(--sans); font-weight:300;
+  -webkit-font-smoothing:antialiased; min-height:100%; padding:0 0 60px;
+}
+body::before{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:radial-gradient(rgba(255,255,255,.35) .5px, transparent .5px);
+  background-size:3px 3px;opacity:.05;
+}
+.wrap{position:relative;z-index:1;max-width:1560px;margin:0 auto;padding:0 22px}
+header{padding:34px 0 22px;border-bottom:1px solid var(--line);margin-bottom:22px;
+  display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap}
+h1{font-size:clamp(24px,3.1vw,40px);font-weight:700;letter-spacing:-.02em;line-height:1.12;
+  background:linear-gradient(96deg,#fff 8%,var(--accent) 52%,var(--accent2) 96%);
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{color:var(--txt2);font-size:13.5px;margin-top:9px;max-width:660px;line-height:1.75}
+.tag{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--accent);border:1px solid rgba(255,209,102,.32);border-radius:100px;
+  padding:5px 13px;white-space:nowrap;background:rgba(255,209,102,.06)}
+.grid{display:grid;grid-template-columns:308px minmax(0,1fr);gap:20px;align-items:start}
+@media(max-width:1120px){.grid{grid-template-columns:1fr}}
+.card{background:linear-gradient(180deg,var(--panel),var(--bg2));border:1px solid var(--line);
+  border-radius:14px;overflow:hidden;box-shadow:0 18px 44px -30px rgba(0,0,0,.95)}
+.card h2{font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--txt3);font-family:var(--mono);padding:12px 16px;border-bottom:1px solid var(--line);
+  display:flex;align-items:center;gap:9px;background:rgba(255,255,255,.014)}
+.card h2 .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 9px var(--accent)}
+.card .body{padding:16px}
+.ctl{margin-bottom:15px}.ctl:last-child{margin-bottom:0}
+.ctl label{display:flex;justify-content:space-between;align-items:baseline;gap:8px;
+  font-size:12.5px;color:var(--txt2);margin-bottom:7px}
+.ctl label .nm{color:var(--txt);font-weight:400}
+.ctl label .val{font-family:var(--mono);font-size:12px;color:var(--accent);font-weight:500}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:20px;background:transparent;cursor:pointer}
+input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:3px;
+  background:linear-gradient(90deg,var(--accent) var(--p,50%),#1d2740 var(--p,50%))}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;
+  margin-top:-5.5px;background:#fff8e6;border:2px solid var(--accent);box-shadow:0 0 11px rgba(255,209,102,.6);
+  transition:transform .13s ease}
+input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.22)}
+input[type=range]::-moz-range-track{height:4px;border-radius:3px;background:#1d2740}
+input[type=range]::-moz-range-progress{height:4px;border-radius:3px;background:var(--accent)}
+input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;background:#fff8e6;border:2px solid var(--accent)}
+input[type=range]:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:5px}
+.sep{height:1px;background:var(--line);margin:16px -16px}
+button{font-family:var(--sans);font-size:12.5px;color:var(--txt);cursor:pointer;
+  background:var(--panel2);border:1px solid var(--line2);border-radius:8px;padding:8px 12px;transition:all .15s ease}
+button:hover{border-color:var(--accent);color:#fff;background:#1f2540}
+button:active{transform:translateY(1px)}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button.pri{background:linear-gradient(180deg,rgba(255,209,102,.2),rgba(255,209,102,.07));border-color:rgba(255,209,102,.5);color:#fff5dd}
+button.on{border-color:var(--accent);color:var(--accent);background:rgba(255,209,102,.12)}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap}.btnrow button{flex:1;min-width:0;white-space:nowrap}
+.canvas-box{position:relative;width:100%;background:#05070d}
+canvas{display:block;width:100%;height:100%}
+#orbitWrap{height:min(44vh,410px)}
+#diskWrap{height:210px}
+#lcWrap{height:262px}
+@media(max-width:640px){#orbitWrap{height:300px}#lcWrap{height:220px}#diskWrap{height:180px}}
+.legend{position:absolute;top:10px;left:12px;display:flex;flex-direction:column;gap:5px;
+  font-family:var(--mono);font-size:10px;color:var(--txt3);pointer-events:none}
+.legend span{display:flex;align-items:center;gap:6px}
+.legend i{width:9px;height:9px;border-radius:2px;display:block}
+.overlay-note{position:absolute;bottom:9px;left:12px;font-family:var(--mono);font-size:10px;color:var(--txt3);pointer-events:none}
+.readouts{display:grid;grid-template-columns:repeat(auto-fit,minmax(146px,1fr));gap:1px;background:var(--line)}
+.ro{background:var(--panel);padding:13px 15px}
+.ro .k{font-size:10.5px;color:var(--txt3);font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase}
+.ro .v{font-family:var(--mono);font-size:19px;font-weight:500;margin-top:5px;letter-spacing:-.01em}
+.ro .u{font-size:11px;color:var(--txt3);margin-left:4px;font-family:var(--sans)}
+.ro.hl .v{color:var(--accent)}.ro.warm .v{color:var(--warm)}.ro.good .v{color:var(--good)}.ro.cool .v{color:var(--cool)}
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(268px,1fr));gap:16px;margin-top:20px}
+.note{background:linear-gradient(180deg,var(--panel),var(--bg2));border:1px solid var(--line);border-radius:14px;padding:18px}
+.note h3{font-size:13.5px;font-weight:500;color:#fff;margin-bottom:9px;display:flex;align-items:center;gap:9px}
+.note h3 .num{font-family:var(--mono);font-size:10px;color:var(--bg);background:var(--accent);width:19px;height:19px;
+  border-radius:5px;display:grid;place-items:center;font-weight:700;flex:none}
+.note p{font-size:12.7px;line-height:1.85;color:var(--txt2)}
+.note p+p{margin-top:8px}
+.eq{font-family:var(--mono);font-size:12px;color:var(--accent);background:rgba(255,209,102,.07);
+  border-left:2px solid var(--accent);padding:9px 12px;border-radius:0 7px 7px 0;margin:10px 0;overflow-x:auto;white-space:nowrap;line-height:1.7}
+.eq[data-tex]{white-space:normal;font-family:inherit}
+.eq[data-tex] .katex{font-size:1.0em;color:var(--accent)}
+b{color:var(--txt);font-weight:500}
+.hl-c{color:var(--accent)}.hl-w{color:var(--warm)}.hl-h{color:var(--hot)}.hl-g{color:var(--good)}
+.fitgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px}
+.verdict{margin-top:14px;padding:13px 15px;border-radius:10px;font-size:12.7px;line-height:1.75;border:1px solid var(--line2);background:var(--panel2)}
+.verdict b{font-family:var(--mono)}
+.checkrow{display:flex;align-items:center;gap:9px;font-size:12.5px;color:var(--txt2);cursor:pointer;user-select:none;margin-top:11px}
+.checkrow input{accent-color:var(--accent);width:15px;height:15px;cursor:pointer}
+.foot{margin-top:30px;padding-top:16px;border-top:1px solid var(--line);color:var(--txt3);font-size:11.5px;font-family:var(--mono);line-height:1.9}
+
+/* ===== 理论推导文档 ===== */
+.doc{margin-top:34px;border:1px solid var(--line);border-radius:16px;overflow:hidden;
+  background:linear-gradient(180deg,#0c1122,#080b16)}
+.doc>.dochead{padding:20px 24px;border-bottom:1px solid var(--line);
+  background:linear-gradient(90deg,rgba(255,209,102,.07),transparent)}
+.doc>.dochead h2{font-size:20px;font-weight:700;color:#fff;letter-spacing:-.01em}
+.doc>.dochead p{color:var(--txt2);font-size:12.7px;margin-top:7px;line-height:1.7}
+.doc .docbody{padding:8px 24px 26px}
+.doc-toc{display:flex;flex-wrap:wrap;gap:8px;padding:16px 0;border-bottom:1px dashed var(--line);margin-bottom:8px}
+.doc-toc a{font-family:var(--mono);font-size:11px;color:var(--accent2);text-decoration:none;
+  border:1px solid var(--line2);border-radius:100px;padding:5px 12px;transition:all .15s}
+.doc-toc a:hover{border-color:var(--accent2);background:rgba(79,214,255,.08)}
+.deriv{padding:22px 0;border-bottom:1px solid var(--line)}
+.deriv:last-child{border-bottom:none}
+.deriv h3{font-size:16px;font-weight:600;color:#fff;margin-bottom:6px;display:flex;align-items:baseline;gap:11px}
+.deriv h3 .secno{font-family:var(--mono);font-size:12px;color:var(--bg);background:var(--accent);
+  border-radius:6px;padding:2px 9px;font-weight:700;flex:none}
+.deriv h4{font-size:13.5px;font-weight:500;color:var(--accent);margin:16px 0 6px}
+.deriv p{font-size:13.2px;line-height:1.95;color:var(--txt2);margin:8px 0}
+.deriv .eqblock{font-family:var(--mono);font-size:13px;color:#e9eefb;background:rgba(255,255,255,.028);
+  border:1px solid var(--line);border-radius:9px;padding:13px 16px;margin:11px 0;overflow-x:auto;line-height:1.95;white-space:pre}
+.deriv .eqblock .c{color:var(--txt3)}
+.deriv .eqblock .r{color:var(--accent)}
+.deriv .eqblock .b{color:var(--accent2)}
+.deriv .eqblock .katex{font-size:1.02em}
+.deriv .eqblock .katex-display{margin:0}
+.deriv .eqblock[data-tex]{white-space:normal}
+.deriv ul{margin:8px 0 8px 4px;list-style:none}
+.deriv li{font-size:13px;line-height:1.85;color:var(--txt2);padding-left:20px;position:relative;margin:5px 0}
+.deriv li::before{content:"▸";position:absolute;left:0;color:var(--accent)}
+.deriv .box{border-left:3px solid var(--good);background:rgba(74,222,128,.06);
+  padding:11px 15px;border-radius:0 8px 8px 0;margin:12px 0;font-size:12.8px;line-height:1.8;color:var(--txt2)}
+.deriv .box b{color:var(--good)}
+.deriv .warn{border-left:3px solid var(--hot);background:rgba(255,107,107,.06)}
+.deriv .warn b{color:var(--hot)}
+.var{font-family:var(--mono);color:var(--accent);font-size:12.5px}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div>
+    <h1>凌星法 · 寻找系外行星</h1>
+    <div class="sub">
+      当行星从恒星前方经过，它会挡住一小部分星光，恒星的亮度出现周期性的微小下降。
+      这条「凌星光曲线」就是探测行星的信使。下面这张可交互星图实时演示从
+      <strong style="color:#fff;font-weight:400">几何对齐</strong>到<span style="color:#fff;font-weight:400">深度／周期／时长反演</span>的完整过程。
+    </div>
+  </div>
+  <div class="tag">Transit Photometry · Light Curve</div>
+</header>
+
+<div class="grid">
+  <!-- 控制面板 -->
+  <div>
+    <div class="card">
+      <h2><i class="dot"></i>系统参数</h2>
+      <div class="body">
+        <div class="ctl"><label><span class="nm">恒星质量 M★</span><span class="val" id="vMstar">1.00 M☉</span></label>
+          <input type="range" id="sMstar" min="0.1" max="3" step="0.01" value="1"></div>
+        <div class="ctl"><label><span class="nm">恒星半径 R★</span><span class="val" id="vRstar">1.00 R☉</span></label>
+          <input type="range" id="sRstar" min="0.3" max="3" step="0.01" value="1"></div>
+        <div class="ctl"><label><span class="nm">行星半径 R<sub>p</sub></span><span class="val" id="vRp">11.2 R⊕</span></label>
+          <input type="range" id="sRp" min="0.3" max="25" step="0.05" value="11.2"></div>
+        <div class="ctl"><label><span class="nm">轨道周期 P</span><span class="val" id="vP">3.50 d</span></label>
+          <input type="range" id="sP" min="0.5" max="500" step="0.01" value="3.5"></div>
+        <div class="ctl"><label><span class="nm">偏心率 e</span><span class="val" id="ve">0.00</span></label>
+          <input type="range" id="se" min="0" max="0.85" step="0.005" value="0"></div>
+        <div class="ctl"><label><span class="nm">轨道倾角 i</span><span class="val" id="vinc">88.0°</span></label>
+          <input type="range" id="sinc" min="60" max="90" step="0.1" value="88"></div>
+        <div class="ctl"><label><span class="nm">近星点角 ω</span><span class="val" id="vom">90°</span></label>
+          <input type="range" id="som" min="0" max="360" step="1" value="90"></div>
+        <div class="sep"></div>
+        <div class="ctl"><label><span class="nm">临边昏暗 u₁</span><span class="val" id="vu1">0.45</span></label>
+          <input type="range" id="su1" min="0" max="1" step="0.01" value="0.45"></div>
+        <div class="ctl"><label><span class="nm">临边昏暗 u₂</span><span class="val" id="vu2">0.22</span></label>
+          <input type="range" id="su2" min="0" max="1" step="0.01" value="0.22"></div>
+        <div class="ctl"><label><span class="nm">测光噪声 σ</span><span class="val" id="vsig">500 ppm</span></label>
+          <input type="range" id="ssig" min="20" max="5000" step="10" value="500"></div>
+        <div class="ctl"><label><span class="nm">观测采样间隔</span><span class="val" id="vdt">0.02 d</span></label>
+          <input type="range" id="sdt" min="0.002" max="0.5" step="0.002" value="0.02"></div>
+        <label class="checkrow"><input type="checkbox" id="cModel" checked>显示真实模型曲线</label>
+        <label class="checkrow"><input type="checkbox" id="cPhase">相位折叠（按真实周期对齐）</label>
+        <label class="checkrow"><input type="checkbox" id="cResid">显示残差（模型−数据）</label>
+      </div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h2><i class="dot" style="background:var(--good);box-shadow:0 0 9px var(--good)"></i>仿真控制</h2>
+      <div class="body">
+        <div class="ctl"><label><span class="nm">时间流速</span><span class="val" id="vspd">1.5 d/s</span></label>
+          <input type="range" id="sspd" min="0.05" max="20" step="0.05" value="1.5"></div>
+        <div class="btnrow" style="margin-bottom:8px">
+          <button class="pri" id="bPlay">⏸ 暂停</button>
+          <button id="bStep">跳到下次凌星</button>
+        </div>
+        <div class="btnrow">
+          <button id="bClear">清空观测</button>
+          <button id="bView">切换视角</button>
+        </div>
+        <div class="foot" style="margin-top:12px;padding-top:10px">
+          快捷键：<span class="kbd">空格</span> 播放/暂停 · <span class="kbd">C</span> 清空 · <span class="kbd">R</span> 复位
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 主视图 -->
+  <div>
+    <div class="card">
+      <h2><i class="dot"></i>① 轨道与凌星几何</h2>
+      <div class="canvas-box" id="orbitWrap">
+        <canvas id="orbit"></canvas>
+        <div class="legend">
+          <span><i style="background:#ffd98a;box-shadow:0 0 8px #ffd98a"></i>恒星</span>
+          <span><i style="background:#2a3550;border:1px solid #4a5a80"></i>行星（剪影）</span>
+          <span><i style="background:#4fd6ff"></i>轨道</span>
+          <span><i style="background:#ff6b6b"></i>视线（观测者方向）</span>
+        </div>
+        <div class="overlay-note" id="orbitNote"></div>
+      </div>
+      <div class="readouts">
+        <div class="ro hl"><div class="k">凌星深度 δ</div><div class="v" id="rDepth">–<span class="u">ppm</span></div></div>
+        <div class="ro warm"><div class="k">半径比 R<sub>p</sub>/R★</div><div class="v" id="rRatio">–</div></div>
+        <div class="ro cool"><div class="k">a / R★</div><div class="v" id="aR">–</div></div>
+        <div class="ro"><div class="k">半长径 a</div><div class="v" id="rA">–<span class="u">AU</span></div></div>
+        <div class="ro good"><div class="k">凌星时长 T₁₄</div><div class="v" id="rDur">–<span class="u">hr</span></div></div>
+        <div class="ro"><div class="k">冲击参数 b</div><div class="v" id="rB">–</div></div>
+        <div class="ro"><div class="k">凌星概率</div><div class="v" id="rProb">–<span class="u">%</span></div></div>
+        <div class="ro"><div class="k">当前行星半径</div><div class="v" id="rRpRj">–<span class="u">R<sub>J</sub></span></div></div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.55fr);gap:20px;margin-top:20px" id="midRow">
+      <div class="card">
+        <h2><i class="dot" style="background:var(--warm);box-shadow:0 0 9px var(--warm)"></i>② 恒星盘面：行星剪影</h2>
+        <div class="canvas-box" id="diskWrap">
+          <canvas id="disk"></canvas>
+          <div class="overlay-note" id="diskNote">临边昏暗 I(μ)=1−u₁(1−μ)−u₂(1−μ)²</div>
+        </div>
+      </div>
+      <div class="card">
+        <h2><i class="dot" style="background:var(--accent2);box-shadow:0 0 9px var(--accent2)"></i>③ 凌星光曲线 F(t)</h2>
+        <div class="canvas-box" id="lcWrap">
+          <canvas id="lc"></canvas>
+        </div>
+      </div>
+    </div>
+    <style>@media(max-width:900px){#midRow{grid-template-columns:1fr!important}}</style>
+
+    <!-- 反演 -->
+    <div class="card" style="margin-top:20px">
+      <h2><i class="dot" style="background:var(--hot);box-shadow:0 0 9px var(--hot)"></i>④ 从光曲线反演行星</h2>
+      <div class="body">
+        <p style="font-size:12.7px;color:var(--txt2);line-height:1.8;margin-bottom:16px">
+          真实观测者只能拿到右侧那些带噪声的数据点。凌星法最精妙的地方在于：
+          <b class="hl-c">深度</b>直接给出<b class="hl-c">行星半径</b>（没有 sin i 模糊！），
+          而 <b class="hl-c">周期</b>与 <b class="hl-c">凌星时长</b>通过开普勒定律给出<b class="hl-c">恒星密度</b>。
+          用滑块去「拟合」数据，读出这些量。
+        </p>
+        <div class="fitgrid">
+          <div>
+            <div class="ctl"><label><span class="nm">拟合深度 δ<sub>fit</sub></span><span class="val" id="vDepFit">1.0 %</span></label>
+              <input type="range" id="sDepFit" min="0" max="0.15" step="0.00005" value="0.01"></div>
+            <div class="ctl"><label><span class="nm">拟合 a/R★（由时长推）</span><span class="val" id="vaRFit">10.0</span></label>
+              <input type="range" id="saRFit" min="1.5" max="1200" step="0.1" value="10"></div>
+            <div class="ctl"><label><span class="nm">假设 R★</span><span class="val" id="vRstarFit">1.00 R☉</span></label>
+              <input type="range" id="sRstarFit" min="0.3" max="3" step="0.01" value="1"></div>
+            <button id="bAuto" style="width:100%">↺ 自动拟合到最优值</button>
+          </div>
+          <div>
+            <div class="readouts" style="border-radius:10px;overflow:hidden;border:1px solid var(--line)">
+              <div class="ro hl"><div class="k">R<sub>p</sub>（由深度）</div><div class="v" id="rRpFit">–<span class="u">R⊕</span></div></div>
+              <div class="ro cool"><div class="k">a（由 a/R★）</div><div class="v" id="raFit">–<span class="u">AU</span></div></div>
+              <div class="ro good"><div class="k">恒星密度 ρ★</div><div class="v" id="rRho">–<span class="u">ρ☉</span></div></div>
+              <div class="ro warm"><div class="k">相对真实 R<sub>p</sub></div><div class="v" id="rErrRp">–<span class="u">%</span></div></div>
+            </div>
+            <div class="verdict" id="verdict">调整滑块，让拟合曲线贴合数据点。</div>
+          </div>
+        </div>
+        <div class="foot" style="margin-top:16px;padding-top:12px;border-top:1px solid var(--line)">
+          <b class="hl-g">与视向速度法互补：</b>凌星法给出<b>半径 R<sub>p</sub></b>，视向速度法给出<b>质量 M<sub>p</sub> sin i</b>。
+          两者结合即得<b>密度</b>，从而判断行星是岩石质、气态还是冰质——这是系外行星科学最关键的一步。
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 完整理论推导 ===== -->
+    <div class="doc">
+      <div class="dochead">
+        <h2>凌星法测系外行星 · 完整理论推导</h2>
+        <p>从两体轨道几何，到临边昏暗下的流量亏损，再到由光曲线反演行星半径与恒星密度。所有公式逐步推导，符号与上方仿真一一对应。</p>
+      </div>
+      <div class="docbody">
+        <div class="doc-toc">
+          <a href="#t1">1 几何与坐标约定</a>
+          <a href="#t2">2 流量亏损与深度</a>
+          <a href="#t3">3 临边昏暗</a>
+          <a href="#t4">4 凌星时长</a>
+          <a href="#t5">5 开普勒第三定律</a>
+          <a href="#t6">6 恒星密度反演</a>
+          <a href="#t7">7 行星半径与轨道</a>
+          <a href="#t8">8 凌星概率</a>
+          <a href="#t9">9 与 RV 结合</a>
+        </div>
+
+        <div class="deriv" id="t1">
+          <h3><span class="secno">1</span>几何与坐标约定</h3>
+          <p>设观测者沿 <span class="var">+X</span> 方向无穷远处看向原点（与视向速度法采用同一约定，便于对比）。天球平面（sky plane）是垂直于视线的 <span class="var">Y–Z</span> 平面。行星绕恒星做开普勒运动，轨道面相对天球平面倾斜 <span class="var">i</span>（<span class="var">i=90°</span> 为侧视，<span class="var">i=0°</span> 为俯视）。</p>
+          <p>采用近焦点角 <span class="var">ω</span>、偏心率 <span class="var">e</span>、真近点角 <span class="var">ν</span>。行星在轨道面内的位置分量为：</p>
+          <div class="eqblock" data-tex="r = \frac{a(1-e^2)}{1+e\cos\nu},\quad x' = r\cos\nu,\quad y' = r\sin\nu \\ x = x'\cos\omega - y'\sin\omega \;\text{(视线)} \\ y = (x'\sin\omega + y'\cos\omega)\cos i,\quad z = (x'\sin\omega + y'\cos\omega)\sin i"><span class="c">// 轨道面内坐标（r 为到恒星距离）</span>
+r  = a(1 − e²) / (1 + e·cos ν)
+x' = r·cos ν          <span class="c">// 指向近星点</span>
+y' = r·sin ν
+
+<span class="c">// 旋转 ω（面内）再倾斜 i（绕视线 X 轴）</span>
+x  = x'·cos ω − y'·sin ω                <span class="c">// 视线方向分量</span>
+y  = (x'·sin ω + y'·cos ω)·cos i        <span class="c">// 天球平面</span>
+z  = (x'·sin ω + y'·cos ω)·sin i</div>
+          <p>行星在天球平面上的投影到恒星中心的角距离（以恒星半径 <span class="var">R★</span> 为单位）决定凌星与否。记 <span class="var">d(t)=√(y²+z²)</span>，则：</p>
+          <div class="eqblock" data-tex="d(t) = \left|\,r\sin(\omega+\nu)\,\right|">d(t) = |r·sin(ω + ν)|</div>
+          <p>当 <span class="var">d &lt; 1 + k</span>（其中 <span class="var">k ≡ R_p/R★</span>）且行星位于观测者一侧（<span class="var">x&gt;0</span>）时，发生凌星。凌星过程中 <span class="var">d</span> 的最小值即<b>冲击参数</b>：</p>
+          <div class="eqblock" data-tex="b = \frac{a\cos i}{R_\star}\cdot\frac{1+e\sin\omega}{1-e^2} \qquad\text{（}b=0\text{ 正掠，}b\ge 1+k\text{ 不凌星）}"><span class="r">b = (a·cos i / R★)·(1 + e·sin ω)/(1 − e²)</span>   <span class="c">// 最小值 = 0 为正掠，b≥1+k 不凌星</span></div>
+        </div>
+
+        <div class="deriv" id="t2">
+          <h3><span class="secno">2</span>流量亏损与凌星深度</h3>
+          <p>设恒星总光度为 <span class="var">L★</span>。凌星时行星剪影挡住了一部分恒星光。若忽略临边昏暗（均匀恒星盘面），被挡掉的流量正比于被掩面积。当行星完全落在恒星盘内（<span class="var">d ≤ 1−k</span>，即平底部分）：</p>
+          <div class="eqblock" data-tex="\text{被挡面积} = \pi R_p^2 \\ \delta \equiv \frac{\Delta L}{L} = \frac{\pi R_p^2}{\pi R_\star^2} = \left(\frac{R_p}{R_\star}\right)^2 = k^2">被挡面积 = π·R_p²
+<span class="r">δ ≡ ΔL/L = (π R_p²)/(π R★²) = (R_p/R★)² = k²</span></div>
+          <p>这就是<b>凌星深度</b>。它只依赖半径比，与距离、质量无关——这是凌星法最干净的可观测量。代入量级：</p>
+          <ul>
+            <li>地球绕太阳：<span class="var">k=(6371/695700)=0.00916</span> → <span class="var">δ≈84 ppm</span>（需极高精度测光，如 Kepler/TESS 的窄视场或 PLATO）。</li>
+            <li>热木星（如 51 Peg b）：<span class="var">R_p≈11 R⊕, R★≈1.2 R☉</span> → <span class="var">δ≈1.1%</span>，地基望远镜即可探测。</li>
+          </ul>
+          <div class="box"><b>关键：</b>深度给出的是<b>真实半径比</b>，没有 <span class="var">sin i</span> 模糊。这与视向速度法只能给 <span class="var">M_p sin i</span> 形成鲜明对比——两种方法是互补的。</div>
+          <p>部分凌星（<span class="var">1−k &lt; d &lt; 1+k</span>）时，掩食区是两个圆的交叠。设两圆半径为 <span class="var">R★</span> 与 <span class="var">R_p</span>、圆心距 <span class="var">d</span>，交叠面积为：</p>
+          <div class="eqblock" data-tex="A = R_p^2\cos^{-1}\!\left(\frac{d^2+R_p^2-R_\star^2}{2dR_p}\right) + R_\star^2\cos^{-1}\!\left(\frac{d^2+R_\star^2-R_p^2}{2dR_\star}\right) - \tfrac12\sqrt{(-d+R_p+R_\star)(d+R_p-R_\star)(d-R_p+R_\star)(d+R_p+R_\star)} \\ \delta(d) = \frac{A}{\pi R_\star^2}\quad\text{(均匀盘近似)}">A = R_p²·cos⁻¹[(d²+R_p²−R★²)/(2 d R_p)]
+  + R★²·cos⁻¹[(d²+R★²−R_p²)/(2 d R★)]
+  − ½·√[(−d+R_p+R★)(d+R_p−R★)(d−R_p+R★)(d+R_p+R★)]
+δ(d) = A / (π R★²)      <span class="c">// 均匀盘近似</span></div>
+        </div>
+
+        <div class="deriv" id="t3">
+          <h3><span class="secno">3</span>临边昏暗（Limb Darkening）</h3>
+          <p>真实恒星边缘（临边）比中心暗。最常用的二次临边昏暗定律，以视线与局部法线夹角 <span class="var">θ</span>（<span class="var">μ=cos θ</span>）描述比强度：</p>
+          <div class="eqblock" data-tex="I(\mu) = I_0\left[\,1 - u_1(1-\mu) - u_2(1-\mu)^2\,\right], \qquad \mu = \sqrt{1-\rho^2},\;\; \rho = r/R_\star"><span class="b">I(μ) = I₀·[ 1 − u₁(1−μ) − u₂(1−μ)² ]</span>,   μ = √(1 − ρ²),  ρ = r/R★</div>
+          <p>其中 <span class="var">ρ</span> 是盘面坐标。此时总流量需对盘面积分，深度不再恰为 <span class="var">k²</span>，且凌星底部呈圆弧形而非平底（因为行星压过不同 <span class="var">μ</span> 的区域，强度不同）。精确流量需 Mandel &amp; Agol (2002) 的椭圆积分公式；本仿真用盘面数值积分（把恒星盘离散为极坐标网格，逐格判断是否被行星覆盖）来体现这一效应。</p>
+          <p>物理后果：临边昏暗使<b>凌星更浅、底部变圆、 ingress/egress 更陡</b>。<span class="var">u₁,u₂</span> 由恒星大气模型与测带波长决定（例如太阳光学波段 <span class="var">u₁≈0.45, u₂≈0.22</span>）。</p>
+        </div>
+
+        <div class="deriv" id="t4">
+          <h3><span class="secno">4</span>凌星时长</h3>
+          <p>定义 <span class="var">T₁₄</span> 为第一次到第四次接触（整个凌星历时），<span class="var">T₂₃</span> 为第二次到第三次接触（平底部分）。先考虑圆轨道（<span class="var">e=0</span>）。</p>
+          <h4>4.1 圆轨道</h4>
+          <p>凌星时行星在天球平面上以近似匀速 <span class="var">v_sky = (2π a/P)·(sin i)</span> 扫过弦长。被扫过的弦长为 <span class="var">2R★√((1+k)²−b²)</span>（几何：圆心在弦的垂足上，半弦长 <span class="var">R★√((1+k)²−b²)</span>，两端再算进 <span class="var">kR★</span> 的 ingress）。于是：</p>
+          <div class="eqblock" data-tex="T_{14} = \frac{P}{\pi}\arcsin\!\left(\frac{R_\star}{a}\frac{\sqrt{(1+k)^2-b^2}}{\sin i}\right) \\ \text{小量近似}(R_\star/a\ll1):\;\; T_{14} \approx \frac{P\,R_\star}{\pi a}\frac{\sqrt{(1+k)^2-b^2}}{\sin i} \\ T_{23} \approx \frac{P\,R_\star}{\pi a}\frac{\sqrt{(1-k)^2-b^2}}{\sin i}\quad\text{(平底，仅 }b<1-k\text{ 存在)}"><span class="r">T₁₄ = (P/π)·arcsin[ (R★/a)·√((1+k)² − b²) / sin i ]</span>
+<span class="c">// 小量近似 (R★/a≪1)：</span>
+T₁₄ ≈ (P·R★ / π a)·√((1+k)² − b²) / sin i
+
+<span class="c">// 平底时长（仅当 b < 1−k 存在）：</span>
+T₂₃ ≈ (P·R★ / π a)·√((1−k)² − b²) / sin i</div>
+          <h4>4.2 偏心轨道修正</h4>
+          <p>偏心率使行星在凌星附近速度不再是 <span class="var">2πa/P</span>，且凌星发生在星历的某个真近点角处。引入 <span class="var">e</span> 与 <span class="var">ω</span> 的修正因子（Winn 2010）：</p>
+          <div class="eqblock" data-tex="T_{14} = \frac{P}{\pi}\arcsin\!\left(\frac{R_\star}{a}\frac{\sqrt{(1+k)^2-b^2}}{\sin i}\right)\cdot\frac{\sqrt{1-e^2}}{1+e\sin\omega}"><span class="r">T₁₄ = (P/π)·arcsin[ (R★/a)·√((1+k)²−b²)/sin i ]·(√(1−e²)/(1+e·sin ω))</span></div>
+          <p>括号中的 <span class="var">(1−e²)^{1/2}/(1+e sin ω)</span> 是<b>动力学修正</b>：若凌星发生在近星点附近（<span class="var">ω≈90°</span>），行星走得快，凌星更短；远星点（<span class="var">ω≈270°</span>）则更长。</p>
+        </div>
+
+        <div class="deriv" id="t5">
+          <h3><span class="secno">5</span>开普勒第三定律</h3>
+          <p>行星（质量 <span class="var">M_p</span>）绕恒星（质量 <span class="var">M★</span>）的总质量 <span class="var">M=M★+M_p</span>。由牛顿引力 + 圆周近似（或角动量守恒）得周期与半长径的关系：</p>
+          <div class="eqblock" data-tex="M_p v^2/a = G M_\star M_p/a^2,\quad v = 2\pi a/P \;\Longrightarrow\; \boxed{\,a^3 = \frac{G M P^2}{4\pi^2}\,}"><span class="c">// 向心力 = 引力： M_p·v²/a = G·M★·M_p/a²</span>
+v = 2π a / P
+⟹  <span class="r">a³ = G·M·P² / (4π²)</span>   <span class="c">// 开普勒第三定律（牛顿形式）</span></div>
+          <p>这是把<b>时间量（P）</b>与<b>几何量（a）</b>联系起来的桥梁。注意式中含 <span class="var">M</span>，所以仅凭周期无法定距离，除非知道质量（或由凌星几何反推，见下节）。</p>
+        </div>
+
+        <div class="deriv" id="t6">
+          <h3><span class="secno">6</span>恒星密度反演（凌星法最深刻的结论）</h3>
+          <p>Seager &amp; Mallén-Ornelas (2003) 指出：凌星几何 + 开普勒定律可以直接给出<b>恒星的平均密度</b>，而不需要知道恒星质量或半径各自是多少！</p>
+          <p>由第 4 节时长公式（圆轨道、小量近似）解出 <span class="var">a/R★</span>：</p>
+          <div class="eqblock" data-tex="\frac{a}{R_\star} = \frac{P}{\pi T_{14}}\frac{\sqrt{(1+k)^2-b^2}}{\sin i}">a/R★ = (P/π T₁₄)·√((1+k)² − b²) / sin i</div>
+          <p>把它代入开普勒定律的密度形式。<span class="var">ρ★ = M★ / (4/3 π R★³)</span>，由 <span class="var">a³=GM★P²/4π²</span> 得 <span class="var">M★ = 4π²a³/(G P²)</span>，于是：</p>
+          <div class="eqblock" data-tex="\rho_\star = \frac{M_\star}{\frac43\pi R_\star^3} = \frac{4\pi^2 a^3/(GP^2)}{\frac43\pi R_\star^3} = \frac{3\pi}{GP^2}\left(\frac{a}{R_\star}\right)^3 \quad\text{(与 }M_\star, R_\star\text{ 各自无关！)}">ρ★ = M★ / (4/3 π R★³)
+   = [4π² a³/(G P²)] / (4/3 π R★³)
+   = (3π / G P²)·(a/R★)³
+
+<span class="r">ρ★ = (3π / G P²)·(a/R★)³</span>        <span class="c">// 与 M★、R★ 各自无关！</span></div>
+          <div class="box"><b>意义：</b>只要测出 <span class="var">P</span> 和 <span class="var">a/R★</span>（由凌星时长），就得到 <span class="var">ρ★</span>。这能独立验证恒星模型、识别蚀食双星污染，并在缺乏光谱质量时仍能约束系统。若进一步假设恒星类型（如主序），即可由 <span class="var">ρ★</span> 推出 <span class="var">R★</span> 与 <span class="var">M★</span>。</div>
+          <p>更精细的做法：同时拟合 <span class="var">T₁₄</span> 与 <span class="var">T₂₃</span> 两个时长，可联立解出 <span class="var">b</span> 与 <span class="var">a/R★</span>，无需假设 <span class="var">i</span>。</p>
+        </div>
+
+        <div class="deriv" id="t7">
+          <h3><span class="secno">7</span>行星半径与轨道距离的确定</h3>
+          <h4>7.1 行星半径</h4>
+          <p>由深度直接得到半径比，再乘以恒星半径：</p>
+          <div class="eqblock" data-tex="R_p = R_\star\sqrt{\delta}\quad\text{(}\delta\text{ 为实测深度)}"><span class="r">R_p = R★·√δ</span>   <span class="c">// δ 为实测深度</span></div>
+          <p>若 <span class="var">R★</span> 已知（光谱学 + 密度约束），<span class="var">R_p</span> 即为真实值。地球半径 <span class="var">R⊕=6371 km</span>，木星半径 <span class="var">R_J=71492 km</span>，太阳半径 <span class="var">R☉=695700 km</span>。</p>
+          <h4>7.2 轨道半长径</h4>
+          <p>有了 <span class="var">a/R★</span> 与 <span class="var">R★</span>：</p>
+          <div class="eqblock" data-tex="a = \frac{a}{R_\star}\cdot R_\star \qquad\text{（天文单位 AU} = 1.496\times10^{11}\text{ m）}"><span class="r">a = (a/R★)·R★</span>   <span class="c">// 天文单位 AU = 1.496×10¹¹ m</span></div>
+          <p>若用第 6 节的密度关系代入，也可写成 <span class="var">a = [G M★ P²/(4π²)]^{1/3}</span>，两种途径互为检验。</p>
+        </div>
+
+        <div class="deriv" id="t8">
+          <h3><span class="secno">8</span>几何凌星概率</h3>
+          <p>并非所有行星都会凌星——轨道面必须恰好侧对我们。设轨道法线与视线的夹角为 <span class="var">i</span>，发生凌星要求 <span class="var">cos i ≤ (R★+R_p)/a</span>（对圆轨道）。若轨道取向在 <span class="var">cos i</span> 上各向同性，则：</p>
+          <div class="eqblock" data-tex="P_{\rm transit} = \frac{R_\star + R_p}{a} = \frac{R_\star}{a}(1+k)"><span class="r">P_transit = (R★ + R_p)/a = (R★/a)(1 + k)</span></div>
+          <p>量级：地球 <span class="var">(R☉/1AU)=0.0046</span> → <span class="var">0.46%</span>；热木星（<span class="var">a=0.05 AU</span>）<span class="var">≈10%</span>。这解释了为何凌星法发现的行星<b>强烈偏向短周期大半径</b>——它们既更容易凌星，也更容易被多次凌星的周期确认。偏心轨道的概率为 <span class="var">(R★/a)(1+e sin ω)/(1−e²)</span>。</p>
+        </div>
+
+        <div class="deriv" id="t9">
+          <h3><span class="secno">9</span>与视向速度法结合：从半径到密度</h3>
+          <p>凌星法给 <span class="var">R_p</span>，视向速度法给 <span class="var">M_p sin i</span>。当同一行星既被凌星又被测到视向速度时，凌星意味着 <span class="var">i≈90°</span>，于是 <span class="var">sin i≈1</span>，RV 的模糊被解除，得到真实质量：</p>
+          <div class="eqblock" data-tex="\text{凌星确认 } i\approx 90^\circ \Rightarrow \sin i\approx 1 \\ M_p = K\left(\frac{P}{2\pi G}\right)^{1/3}M_\star^{2/3}\sqrt{1-e^2}\quad\text{(RV 质量函数)} \\ \rho_p = \frac{M_p}{\frac43\pi R_p^3} = \frac{3M_p}{4\pi R_p^3}"><span class="c">// 凌星确认 i≈90° ⟹ sin i≈1</span>
+M_p = K·(P/2πG)^{1/3}·M★^{2/3}·√(1−e²)     <span class="c">// RV 质量函数</span>
+
+<span class="c">// 行星平均密度</span>
+<span class="r">ρ_p = M_p / (4/3 π R_p³) = 3 M_p / (4π R_p³)</span></div>
+          <p>密度是判断行星<b>成分</b>的关键：约 <span class="var">5.5 g/cm³</span> 为类地（岩石+铁），约 <span class="var">1.3 g/cm³</span> 为富水/冰巨星，约 <span class="var">0.3 g/cm³</span> 为气态巨行星。这正是 2000 年代以来大量「超级地球」「亚海王星」被分类的物理基础。</p>
+          <div class="box warn"><b>常见系统误差：</b>① 未考虑的食双星（背景星被行星状天体凌星）可伪造深度，需 RV 或色差（不同波段深度不同）证伪；② 恒星半径若估错 10%，<span class="var">R_p</span> 就错 10%（<span class="var">R_p∝R★</span>）；③ 第三光（双星伴光）会稀释深度使 <span class="var">R_p</span> 偏小；④ 活动区/黑子造成测光噪声与伪凌星。</div>
+          <p style="margin-top:14px;color:var(--txt3);font-size:12px;font-family:var(--mono)">历史：1999 年首次确认系外行星 HD 209458 b 被凌星（Charbonneau et al.）；2000 年代 Kepler 太空望远镜（2009–2018）以凌星法发现数千行星并测得其半径分布，开启了「宜居带」统计（如 TRAPPIST-1 七行星系统）。</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="foot">
+      模型：牛顿两体开普勒轨道 · 二次临边昏暗数值积分 · 深度 δ=(R_p/R★)² · ρ★=(3π/G P²)(a/R★)³<br>
+      常数：G = 6.674×10⁻¹¹ m³kg⁻¹s⁻² · 1 M☉ = 1.989×10³⁰ kg · 1 R☉ = 6.957×10⁸ m · 1 R⊕ = 6.371×10⁶ m · 1 R_J = 7.1492×10⁷ m · 1 AU = 1.496×10¹¹ m
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ================= 常量 ================= */
+const G=6.674e-11, MSUN=1.989e30, RSUN=6.957e8, REARTH=6.371e6, RJUP=7.1492e7, AU=1.496e11, DAY=86400;
+const $=id=>document.getElementById(id);
+
+const state={
+  Mstar:1.0, Rstar:1.0, Rp:11.2, P:3.5, e:0.0, inc:88, omega:90,
+  u1:0.45, u2:0.22, sigma:500, dtObs:0.02, speed:1.5,
+  t:0, t0:0, nextObs:0, running:true, viewMode:0,
+  showModel:true, fold:false, resid:false,
+  DepFit:0.01, aRFit:10, RstarFit:1.0
+};
+const obs=[];
+
+let D={};
+function recompute(){
+  const Ms=state.Mstar*MSUN, Rs=state.Rstar*RSUN, Rp=state.Rp*REARTH;
+  const Ps=state.P*DAY;
+  // 行星质量对 a 的影响忽略（M_p<<M★），用 M★
+  const a=Math.cbrt(G*Ms*Ps*Ps/(4*Math.PI*Math.PI));
+  const k=Rp/Rs;
+  const n=2*Math.PI/Ps;
+  const b=(a*Math.cos(state.inc*Math.PI/180)/Rs)*(1+state.e*Math.sin(state.omega*Math.PI/180))/(1-state.e*state.e);
+  const aR=a/Rs;
+  // 凌星时长 T14（小量近似 + 偏心修正）
+  const arg=(Rs/a)*Math.sqrt(Math.max(0,(1+k)*(1+k)-b*b))/Math.sin(state.inc*Math.PI/180);
+  const T14=(state.P/Math.PI)*Math.asin(Math.min(1,arg))*(Math.sqrt(1-state.e*state.e)/(1+state.e*Math.sin(state.omega*Math.PI/180)));
+  const depth=k*k;
+  const prob=(Rs/a)*(1+k)*100;
+  const rho=3*Math.PI/(G*Ps*Ps)*Math.pow(aR,3); // kg/m3
+  D={Ms,Rs,Rp,a,k,n,b,aR,T14,depth,prob,rho,Ps};
+}
+
+/* ================= 开普勒 ================= */
+function keplerE(M,e){
+  M=((M+Math.PI)%(2*Math.PI)+2*Math.PI)%(2*Math.PI)-Math.PI;
+  let E=M+e*Math.sin(M);
+  for(let it=0;it<60;it++){const f=E-e*Math.sin(E)-M,fp=1-e*Math.cos(E);const d=f/fp;E-=d;if(Math.abs(d)<1e-13)break;}
+  return E;
+}
+
+/* 行星在时刻 t 的天球平面投影（单位：m）及是否位于恒星前方 */
+function planetSky(t){
+  const w=state.omega*Math.PI/180, inc=state.inc*Math.PI/180;
+  const cw=Math.cos(w),sw=Math.sin(w),ci=Math.cos(inc),si=Math.sin(inc);
+  const M=D.n*((t-state.t0)*DAY);
+  const E=keplerE(M,state.e);
+  const xp=D.a*(Math.cos(E)-state.e);
+  const yp=D.a*Math.sqrt(1-state.e*state.e)*Math.sin(E);
+  const x=xp*cw-yp*sw;
+  const y=(xp*sw+yp*cw)*ci;
+  const z=(xp*sw+yp*cw)*si;
+  return {x,y,z,d:Math.hypot(y,z)};
+}
+
+/* ================= 临边昏暗流量（数值积分） ================= */
+let CELLS=null, TOTAL=0, DTH=Math.PI/110;
+function buildCells(){
+  const N=100, M=110; CELLS=[]; TOTAL=0;
+  DTH=Math.PI/M;                 // 半圆盘内每个角格的角宽度（θ∈[0,π)）
+  const dr=1/N;
+  for(let i=0;i<N;i++){
+    const rho=(i+0.5)/N;
+    const mu=Math.sqrt(Math.max(0,1-rho*rho));
+    const I=1-state.u1*(1-mu)-state.u2*(1-mu)*(1-mu);
+    for(let j=0;j<M;j++){
+      const th=(j+0.5)*DTH;      // 半周对称，整圆流量 = 2×半圆
+      CELLS.push({rho,c:Math.cos(th),s:Math.sin(th),I});
+      TOTAL+=I*rho*dr*DTH;       // 半圆盘总流量
+    }
+  }
+}
+/* d 以 R★ 为单位；返回归一化流量（整圆可视流量 / 整圆总流量） */
+function fluxAt(d,k){
+  if(d>=1+k) return 1;
+  if(d<=Math.max(0,1-k)) return 1-k*k; // 完全凌星（平底，忽略临边变化）
+  let vis=0;
+  const k2=k*k, dr=1/100;
+  for(let idx=0;idx<CELLS.length;idx++){
+    const ce=CELLS[idx];
+    const px=ce.rho*ce.c-d, py=ce.rho*ce.s;
+    if(px*px+py*py>k2) vis+=ce.I*ce.rho*dr*DTH;
+  }
+  return vis/TOTAL;              // 半圆比值 = 整圆比值
+}
+
+/* ================= 光曲线缓存 ================= */
+let LC={t:[],f:[]};
+function buildLightCurve(){
+  recompute(); buildCells();
+  const nC=3, Tmax=state.P*nC, N=900;
+  LC.t=[]; LC.f=[];
+  for(let i=0;i<=N;i++){
+    const t=Tmax*i/N;
+    const P=planetSky(t);
+    const dr=P.d/D.Rs;
+    // 仅当行星在观测者一侧(x>0)且投影进入恒星盘时产生凌星
+    let f=1;
+    if(P.x>0 && dr<1+D.k) f=fluxAt(dr,D.k);
+    LC.t.push(t); LC.f.push(f);
+  }
+}
+
+/* ================= Canvas ================= */
+function setupCanvas(cv){
+  const dpr=Math.min(window.devicePixelRatio||1,2);
+  const r=cv.getBoundingClientRect();
+  cv.width=Math.max(1,Math.round(r.width*dpr));
+  cv.height=Math.max(1,Math.round(r.height*dpr));
+  const ctx=cv.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {ctx,w:r.width,h:r.height};
+}
+const cvOrbit=$('orbit'), cvDisk=$('disk'), cvLc=$('lc');
+
+/* 3D 投影 */
+let camAz=-0.62, camEl=0.40;
+function project(p,w,h,scale,cx,cy){
+  const ca=Math.cos(camAz),sa=Math.sin(camAz),ce=Math.cos(camEl),se=Math.sin(camEl);
+  const u=-p.x*sa+p.y*ca;
+  const v=p.x*ca*se+p.y*sa*se-p.z*ce;
+  const d=p.x*ce*ca+p.y*ce*sa+p.z*se;
+  return {sx:cx+u*scale,sy:cy-v*scale,d};
+}
+
+/* ================= ① 轨道视图 ================= */
+function drawOrbit(){
+  // 视角模式：0=默认斜视 1=近侧视(沿视线) 2=俯视(轨道面) 3=仰视
+  const VIEWS=[[-0.62,0.40],[0.02,0.10],[0.0,1.35],[-1.2,0.55]];
+  const vv=VIEWS[((state.viewMode%VIEWS.length)+VIEWS.length)%VIEWS.length];
+  camAz=vv[0]; camEl=vv[1];
+  const {ctx,w,h}=setupCanvas(cvOrbit);
+  ctx.clearRect(0,0,w,h);
+  const g=ctx.createRadialGradient(w*0.5,h*0.42,10,w*0.5,h*0.5,Math.max(w,h)*0.8);
+  g.addColorStop(0,'#0b1020'); g.addColorStop(1,'#04060c');
+  ctx.fillStyle=g; ctx.fillRect(0,0,w,h);
+  for(let k=0;k<130;k++){ctx.fillStyle=`rgba(190,215,255,${0.05+0.2*(((k*31)%7)/7)})`;ctx.fillRect(((k*97.13)%1)*w,((k*57.7)%1)*h,1,1);}
+
+  const P=planetSky(state.t);
+  const scale=Math.min(w,h)*0.33/Math.max(D.a,1e-9);
+  const cx=w*0.52, cy=h*0.5;
+
+  // 轨道（椭圆，在倾斜平面）
+  ctx.save(); ctx.strokeStyle='rgba(79,214,255,.4)'; ctx.lineWidth=1.3; ctx.setLineDash([5,5]);
+  ctx.beginPath();
+  const w2=state.omega*Math.PI/180, ci=Math.cos(state.inc*Math.PI/180), si=Math.sin(state.inc*Math.PI/180);
+  const N=240;
+  for(let k=0;k<=N;k++){
+    const tt=k/N*2*Math.PI-Math.PI;
+    const xp=D.a*(Math.cos(tt)-state.e), yp=D.a*Math.sqrt(1-state.e*state.e)*Math.sin(tt);
+    const X=xp*Math.cos(w2)-yp*Math.sin(w2);
+    const Y=(xp*Math.sin(w2)+yp*Math.cos(w2))*ci;
+    const Z=(xp*Math.sin(w2)+yp*Math.cos(w2))*si;
+    const p=project({x:X,y:Y,z:Z},w,h,scale,cx,cy);
+    k?ctx.lineTo(p.sx,p.sy):ctx.moveTo(p.sx,p.sy);
+  }
+  ctx.stroke(); ctx.setLineDash([]); ctx.restore();
+
+  // 天球平面（y-z）
+  ctx.save(); ctx.translate(cx,cy);
+  ctx.beginPath(); ctx.arc(0,0,D.Rs*scale,0,2*Math.PI);
+  ctx.strokeStyle='rgba(255,255,255,.1)'; ctx.setLineDash([3,6]); ctx.lineWidth=1; ctx.stroke(); ctx.setLineDash([]);
+  ctx.restore();
+
+  // 视线
+  const eye=project({x:2.6*D.a,y:0,z:0},w,h,scale,cx,cy);
+  const o=project({x:0,y:0,z:0},w,h,scale,cx,cy);
+  ctx.save();
+  const grd=ctx.createLinearGradient(eye.sx,eye.sy,o.sx,o.sy);
+  grd.addColorStop(0,'rgba(255,107,107,.02)'); grd.addColorStop(1,'rgba(255,107,107,.55)');
+  ctx.strokeStyle=grd; ctx.lineWidth=2.2; ctx.setLineDash([9,7]);
+  ctx.beginPath(); ctx.moveTo(eye.sx,eye.sy); ctx.lineTo(o.sx,o.sy); ctx.stroke(); ctx.setLineDash([]);
+  const ang=Math.atan2(o.sy-eye.sy,o.sx-eye.sx);
+  ctx.fillStyle='rgba(255,107,107,.85)'; ctx.beginPath(); ctx.moveTo(o.sx,o.sy);
+  ctx.lineTo(o.sx-13*Math.cos(ang-0.36),o.sy-13*Math.sin(ang-0.36));
+  ctx.lineTo(o.sx-13*Math.cos(ang+0.36),o.sy-13*Math.sin(ang+0.36)); ctx.closePath(); ctx.fill();
+  ctx.fillStyle='rgba(255,140,140,.95)'; ctx.beginPath(); ctx.ellipse(eye.sx+3,eye.sy,10,6,0,0,2*Math.PI); ctx.fill();
+  ctx.fillStyle='#04060c'; ctx.beginPath(); ctx.arc(eye.sx+3,eye.sy,2.7,0,2*Math.PI); ctx.fill();
+  ctx.font='500 11px JetBrains Mono, monospace'; ctx.fillStyle='rgba(255,140,140,.75)';
+  ctx.fillText('视线 LOS',eye.sx-46,eye.sy-16); ctx.fillText('观测者',eye.sx-22,eye.sy+22);
+  ctx.restore();
+
+  // 恒星
+  const srad=Math.max(8,Math.min(20,D.Rs*scale));
+  const sg=ctx.createRadialGradient(o.sx,o.sy,0,o.sx,o.sy,srad*4);
+  sg.addColorStop(0,'rgba(255,217,138,.5)'); sg.addColorStop(1,'rgba(255,217,138,0)');
+  ctx.fillStyle=sg; ctx.beginPath(); ctx.arc(o.sx,o.sy,srad*4,0,2*Math.PI); ctx.fill();
+  const sg2=ctx.createRadialGradient(o.sx-srad*.3,o.sy-srad*.3,0,o.sx,o.sy,srad);
+  sg2.addColorStop(0,'#fff6dc'); sg2.addColorStop(.6,'#ffd98a'); sg2.addColorStop(1,'#e8a83c');
+  ctx.fillStyle=sg2; ctx.beginPath(); ctx.arc(o.sx,o.sy,srad,0,2*Math.PI); ctx.fill();
+
+  // 行星剪影（仅当在观测者一侧且投影在恒星附近）
+  const pp=project({x:P.x,y:P.y,z:P.z},w,h,scale,cx,cy);
+  const prad=Math.max(3,D.Rp*scale);
+  const inFront=P.x>0;
+  // 连线
+  ctx.strokeStyle='rgba(255,255,255,.14)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(o.sx,o.sy); ctx.lineTo(pp.sx,pp.sy); ctx.stroke();
+  if(inFront){
+    ctx.fillStyle='#0a0e18';
+    ctx.beginPath(); ctx.arc(pp.sx,pp.sy,prad,0,2*Math.PI); ctx.fill();
+    ctx.strokeStyle='rgba(120,150,210,.7)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.arc(pp.sx,pp.sy,prad,0,2*Math.PI); ctx.stroke();
+    ctx.fillStyle='rgba(150,180,240,.85)'; ctx.font='400 10.5px JetBrains Mono, monospace';
+    ctx.fillText('行星',pp.sx+prad+5,pp.sy-prad-2);
+  } else {
+    ctx.fillStyle='rgba(110,168,255,.9)'; ctx.beginPath(); ctx.arc(pp.sx,pp.sy,prad*0.7,0,2*Math.PI); ctx.fill();
+    ctx.fillStyle='rgba(150,180,240,.7)'; ctx.font='400 10.5px JetBrains Mono, monospace';
+    ctx.fillText('行星',pp.sx+prad+5,pp.sy-prad-2);
+  }
+
+  // 凌星状态标注
+  const dr=P.d/D.Rs;
+  ctx.font='500 11px JetBrains Mono, monospace';
+  if(inFront && dr<1+D.k){
+    ctx.fillStyle='#4ade80';
+    ctx.fillText('● 凌星进行中  d='+dr.toFixed(3)+' R★', pp.sx+prad+8, pp.sy+prad+12);
+  } else {
+    ctx.fillStyle='rgba(143,157,189,.8)';
+    ctx.fillText('d = '+dr.toFixed(3)+' R★  (凌星需 d<1+k)', pp.sx+prad+8, pp.sy+prad+12);
+  }
+  $('orbitNote').textContent=`a=${(D.a/AU).toFixed(4)} AU  ·  a/R★=${D.aR.toFixed(1)}  ·  i=${state.inc.toFixed(1)}°  ·  b=${D.b.toFixed(3)}  ·  δ=${(D.depth*1e6).toFixed(0)} ppm`;
+}
+
+/* ================= ② 恒星盘面 ================= */
+function drawDisk(){
+  const {ctx,w,h}=setupCanvas(cvDisk);
+  ctx.clearRect(0,0,w,h); ctx.fillStyle='#05070d'; ctx.fillRect(0,0,w,h);
+  const cx=w*0.5, cy=h*0.5, R=Math.min(w,h)*0.40;
+
+  // 临边昏暗盘面
+  const img=ctx.createImageData(Math.round(w),Math.round(h));
+  // 用解析 I(μ) 填充（逐像素）
+  for(let py=0;py<h;py++){
+    for(let px=0;px<w;px++){
+      const dx=(px-cx)/R, dy=(py-cy)/R, rho=Math.hypot(dx,dy);
+      const idx=(py*Math.round(w)+px)*4;
+      if(rho<=1){
+        const mu=Math.sqrt(1-rho*rho);
+        const I=1-state.u1*(1-mu)-state.u2*(1-mu)*(1-mu);
+        const base=255*I;
+        img.data[idx]=Math.min(255,255*I);
+        img.data[idx+1]=Math.min(255,225*I);
+        img.data[idx+2]=Math.min(255,170*I);
+        img.data[idx+3]=255;
+      } else {
+        img.data[idx+3]=0;
+      }
+    }
+  }
+  ctx.putImageData(img,0,0);
+  ctx.strokeStyle='rgba(255,255,255,.15)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.arc(cx,cy,R,0,2*Math.PI); ctx.stroke();
+
+  // 行星剪影位置（把天球 y,z 映射到盘面：取 y 为横、z 为纵）
+  const P=planetSky(state.t);
+  if(P.x>0){
+    const px=cx+(P.y/D.Rs)*R, py=cy-(P.z/D.Rs)*R;
+    const prad=(D.Rp/D.Rs)*R;
+    if(prad>0.4){
+      ctx.fillStyle='#07090f';
+      ctx.beginPath(); ctx.arc(px,py,prad,0,2*Math.PI); ctx.fill();
+      ctx.strokeStyle='rgba(120,150,210,.8)'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.arc(px,py,prad,0,2*Math.PI); ctx.stroke();
+    }
+  }
+  // 冲击参数标注
+  ctx.font='400 10px JetBrains Mono, monospace'; ctx.fillStyle='rgba(255,255,255,.7)';
+  ctx.fillText('b = '+D.b.toFixed(3)+' R★', 8, h-8);
+  ctx.textAlign='right'; ctx.fillText('k = R_p/R★ = '+D.k.toFixed(4), w-8, h-8); ctx.textAlign='left';
+  $('diskNote').textContent='临边昏暗 I(μ)=1−u₁(1−μ)−u₂(1−μ)²  ·  u₁='+state.u1.toFixed(2)+' u₂='+state.u2.toFixed(2);
+}
+
+/* ================= ③ 光曲线 ================= */
+function drawLC(){
+  const {ctx,w,h}=setupCanvas(cvLc);
+  ctx.clearRect(0,0,w,h); ctx.fillStyle='#05070d'; ctx.fillRect(0,0,w,h);
+
+  const padL=56,padR=14,padT=14,padB=28;
+  const pw=w-padL-padR, ph=h-padT-padB;
+  const nC=3;
+  // x 轴范围自适应：至少 3 个周期，若观测更久则扩展到最大观测时间
+  let tMaxObs=0;
+  for(const o of obs){ if(o.t>tMaxObs) tMaxObs=o.t; }
+  const Tmax=Math.max(state.P*nC, tMaxObs*1.02);
+  const foldP=state.fold?state.P:Tmax;
+
+  // 纵轴范围（以深度为中心）
+  const depth=D.depth;
+  const pad=Math.max(depth*1.4, 0.0005);
+  const yTop=1+pad*0.15, yBot=1-pad*1.05;
+  const yOf=f=>padT+ph*(yTop-f)/(yTop-yBot);
+  const xOf=t=>padL+(state.fold?(((t%state.P)+state.P)%state.P)/foldP:t/Tmax)*pw;
+
+  // 网格
+  ctx.strokeStyle='rgba(255,255,255,.055)'; ctx.lineWidth=1;
+  ctx.fillStyle='rgba(143,157,189,.8)'; ctx.font='400 9.5px JetBrains Mono, monospace';
+  // 纵轴刻度
+  const nY=5;
+  for(let k=0;k<=nY;k++){
+    const f=yBot+(yTop-yBot)*k/nY;
+    const y=yOf(f);
+    ctx.strokeStyle=Math.abs(f-1)<1e-12?'rgba(255,255,255,.22)':'rgba(255,255,255,.05)';
+    ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(padL+pw,y); ctx.stroke();
+    ctx.textAlign='right'; ctx.fillText((f*1e6).toFixed(0), padL-7, y+3.5);
+  }
+  ctx.textAlign='center';
+  const nT=state.fold?6:nC*3;
+  for(let k=0;k<=nT;k++){
+    const x=padL+pw*k/nT;
+    ctx.strokeStyle='rgba(255,255,255,.04)';
+    ctx.beginPath(); ctx.moveTo(x,padT); ctx.lineTo(x,padT+ph); ctx.stroke();
+    ctx.fillText((foldP*k/nT).toFixed(state.fold?2:2), x, padT+ph+15);
+  }
+  ctx.textAlign='left';
+  ctx.fillText(state.fold?'轨道相位 [天]':'时间 [天]', padL+2, padT+ph+15);
+  ctx.save(); ctx.translate(14,padT+ph/2); ctx.rotate(-Math.PI/2); ctx.textAlign='center';
+  ctx.fillText('相对流量 F [ppm]',0,0); ctx.restore();
+
+  // 1.0 基准
+  ctx.strokeStyle='rgba(255,255,255,.25)'; ctx.setLineDash([4,4]);
+  ctx.beginPath(); ctx.moveTo(padL,yOf(1)); ctx.lineTo(padL+pw,yOf(1)); ctx.stroke(); ctx.setLineDash([]);
+
+  // 模型曲线
+  if(state.showModel){
+    ctx.strokeStyle='rgba(79,214,255,.55)'; ctx.lineWidth=1.3; ctx.setLineDash([6,4]);
+    ctx.beginPath();
+    const NN=700;
+    for(let k=0;k<=NN;k++){
+      const t=foldP*k/NN;
+      const tt=state.fold?t: t;
+      const P=planetSky(tt);
+      const dr=P.d/D.Rs;
+      let f=1; if(P.x>0&&dr<1+D.k) f=fluxAt(dr,D.k);
+      const x=padL+k/NN*pw, y=yOf(f);
+      k?ctx.lineTo(x,y):ctx.moveTo(x,y);
+    }
+    ctx.stroke(); ctx.setLineDash([]);
+  }
+
+  // 拟合曲线（用户 δ_fit, aR_fit）
+  ctx.strokeStyle='rgba(255,107,107,.9)'; ctx.lineWidth=1.6;
+  ctx.beginPath();
+  const kFit=Math.sqrt(state.DepFit);
+  const bFit=state.aRFit>0? 0.5:0; // 简化：用拟合深度推平底
+  for(let k=0;k<=700;k++){
+    const t=foldP*k/700;
+    const tt=state.fold?t:t;
+    const P=planetSky(tt);
+    const dr=P.d/D.Rs;
+    // 用拟合半径比近似（均匀盘）
+    let f=1;
+    if(P.x>0&&dr<1+kFit){
+      if(dr<=1-kFit) f=1-state.DepFit;
+      else if(dr<1+kFit){
+        const d2=dr*dr, Rp2=kFit*kFit, Rr=1;
+        const A=Rp2*Math.acos(Math.min(1,Math.max(-1,(d2+Rp2-1)/(2*dr*kFit))))
+              +Math.acos(Math.min(1,Math.max(-1,(d2+1-Rp2)/(2*dr))))
+              -0.5*Math.sqrt(Math.max(0,(-dr+kFit+1)*(dr+kFit-1)*(dr-kFit+1)*(dr+kFit+1)));
+        f=1-A/Math.PI;
+      }
+    }
+    const x=padL+k/700*pw, y=yOf(f);
+    k?ctx.lineTo(x,y):ctx.moveTo(x,y);
+  }
+  ctx.stroke();
+
+  // 观测点（全部显示，x 轴已自适应）
+  obs.forEach(o=>{
+    const x=xOf(o.t), y=yOf(o.f);
+    ctx.fillStyle='rgba(255,255,255,.85)';
+    ctx.beginPath(); ctx.arc(x,y,2.1,0,2*Math.PI); ctx.fill();
+  });
+
+  // 播放头
+  const hx=xOf(state.t);
+  if(!state.fold&&hx<=padL+pw+1){
+    ctx.strokeStyle='rgba(124,107,255,.8)'; ctx.lineWidth=1.4;
+    ctx.beginPath(); ctx.moveTo(hx,padT); ctx.lineTo(hx,padT+ph); ctx.stroke();
+    ctx.fillStyle='#7c6bff'; ctx.beginPath(); ctx.moveTo(hx,padT); ctx.lineTo(hx-4.5,padT-7); ctx.lineTo(hx+4.5,padT-7); ctx.closePath(); ctx.fill();
+  }
+
+  // 图例
+  ctx.font='400 9.5px JetBrains Mono, monospace'; ctx.textAlign='left';
+  [['rgba(79,214,255,.85)','真实模型'],['rgba(255,107,107,.9)','你的拟合'],['rgba(255,255,255,.8)','观测点']].forEach(([c,t],i)=>{
+    const lx=padL+8+i*118;
+    ctx.fillStyle=c; ctx.fillRect(lx,padT+5,8,3);
+    ctx.fillStyle='rgba(143,157,189,.85)'; ctx.fillText(t,lx+12,padT+10);
+  });
+}
+
+/* ================= 读数 ================= */
+function updateReadouts(){
+  recompute();
+  $('rDepth').innerHTML=(D.depth*1e6).toFixed(0)+'<span class="u">ppm</span>';
+  $('rRatio').innerHTML=D.k.toFixed(4);
+  $('aR').textContent=D.aR.toFixed(1);
+  $('rA').innerHTML=(D.a/AU).toFixed(4)+'<span class="u">AU</span>';
+  $('rDur').innerHTML=(D.T14*24).toFixed(2)+'<span class="u">hr</span>';
+  $('rB').textContent=D.b.toFixed(3);
+  $('rProb').innerHTML=D.prob.toFixed(2)+'<span class="u">%</span>';
+  $('rRpRj').innerHTML=(D.Rp/RJUP).toFixed(3)+'<span class="u">R<sub>J</sub></span>';
+}
+
+/* ================= 反演 ================= */
+function updateFit(){
+  recompute();
+  const kFit=Math.sqrt(state.DepFit);
+  const RpFit=kFit*(state.RstarFit*RSUN);
+  const aFit=state.aRFit*(state.RstarFit*RSUN);
+  const Ps=state.P*DAY;
+  const rho=(3*Math.PI/(G*Ps*Ps))*Math.pow(state.aRFit,3);
+  $('rRpFit').innerHTML=(RpFit/REARTH).toFixed(2)+'<span class="u">R⊕</span>';
+  $('raFit').innerHTML=(aFit/AU).toFixed(4)+'<span class="u">AU</span>';
+  $('rRho').innerHTML=(rho/1408).toFixed(3)+'<span class="u">ρ☉</span>';
+
+  const truthRp=D.Rp;
+  const errRp=(RpFit-truthRp)/truthRp*100;
+  $('rErrRp').innerHTML=(errRp>=0?'+':'')+errRp.toFixed(1)+'<span class="u">%</span>';
+
+  let msg='';
+  const depErr=Math.abs(state.DepFit-D.depth)/Math.max(D.depth,1e-12)*100;
+  const aRErr=Math.abs(state.aRFit-D.aR)/Math.max(D.aR,1e-9)*100;
+  if(obs.length<3){
+    msg=`数据点不足（${obs.length} 个）。让仿真运行、多积累几次凌星；或把采样间隔调小、噪声调低。`;
+  } else if(depErr<8 && aRErr<10){
+    msg=`<b style="color:var(--good)">✓ 拟合成功。</b> 深度读出 <b class="hl-c">R_p = ${(RpFit/REARTH).toFixed(1)} R⊕</b>，`+
+        `时长给出 <b class="hl-c">a/R★ = ${state.aRFit.toFixed(1)}</b>，进而 <b class="hl-c">ρ★ = ${(rho/1408).toFixed(3)} ρ☉</b>。`+
+        `注意：这里得到的是<b class="hl-g">真实半径</b>（无 sin i 模糊）——这是凌星法相对视向速度法的独特优势。`+
+        `若再测得视向速度，即可得质量与密度，判断行星成分。`;
+  } else if(depErr>=8){
+    msg=`深度偏差 <b class="hl-h">${depErr.toFixed(1)}%</b>。深度 δ=(R_p/R★)²，是光曲线平底（或凌星最深处）相对 1.0 的亏损。`+
+        `当前真实深度 <b class="hl-c">${(D.depth*1e6).toFixed(0)} ppm</b>，请把 δ_fit 调到接近它。`;
+  } else {
+    msg=`深度对了，但 a/R★ 偏差 <b class="hl-h">${aRErr.toFixed(1)}%</b>。a/R★ 由凌星时长 T₁₄ 与周期 P 决定：`+
+        `a/R★ ≈ (P/πT₁₄)·√((1+k)²−b²)。周期越短、凌星越长，a/R★ 越小。当前真实值 <b class="hl-c">${D.aR.toFixed(1)}</b>。`;
+  }
+  $('verdict').innerHTML=msg;
+}
+
+/* ================= 仿真循环 ================= */
+let last=performance.now();
+function loop(now){
+  const dtReal=Math.min((now-last)/1000,0.1); last=now;
+  if(state.running){
+    const dtDays=dtReal*state.speed;
+    state.t+=dtDays;
+    while(state.nextObs<=state.t){
+      const tt=state.nextObs;
+      const P=planetSky(tt);
+      const dr=P.d/D.Rs;
+      let f=1; if(P.x>0&&dr<1+D.k) f=fluxAt(dr,D.k);
+      f+=gauss()*state.sigma/1e6;
+      obs.push({t:tt-state.t0,f});
+      state.nextObs+=state.dtObs;
+      if(obs.length>6000) obs.shift();
+    }
+  }
+  drawOrbit(); drawDisk(); drawLC();
+  if(state.running){ updateReadouts(); updateFit(); }
+  requestAnimationFrame(loop);
+}
+let gseed=null;
+function gauss(){
+  if(gseed!==null){const v=gseed;gseed=null;return v;}
+  let u=0,v=0,s=0;do{u=Math.random()*2-1;v=Math.random()*2-1;s=u*u+v*v;}while(s===0||s>=1);
+  const m=Math.sqrt(-2*Math.log(s)/s); gseed=v*m; return u*m;
+}
+
+/* ================= 控件 ================= */
+function bind(id,key,fmt,out){
+  const el=$(id),lab=$(out);
+  const sync=()=>{
+    const raw=parseFloat(el.value); state[key]=raw; lab.innerHTML=fmt(raw);
+    el.style.setProperty('--p',((raw-el.min)/(el.max-el.min)*100)+'%');
+    buildLightCurve(); updateReadouts(); updateFit();
+  };
+  el.addEventListener('input',sync); sync();
+}
+bind('sMstar','Mstar',x=>x.toFixed(2)+' M☉','vMstar');
+bind('sRstar','Rstar',x=>x.toFixed(2)+' R☉','vRstar');
+bind('sRp','Rp',x=>x.toFixed(2)+' R⊕','vRp');
+bind('sP','P',x=>x.toFixed(2)+' d','vP');
+bind('se','e',x=>x.toFixed(3),'ve');
+bind('sinc','inc',x=>x.toFixed(1)+'°','vinc');
+bind('som','omega',x=>x.toFixed(0)+'°','vom');
+bind('su1','u1',x=>x.toFixed(2),'vu1');
+bind('su2','u2',x=>x.toFixed(2),'vu2');
+bind('ssig','sigma',x=>x.toFixed(0)+' ppm','vsig');
+bind('sdt','dtObs',x=>x.toFixed(3)+' d','vdt');
+bind('sspd','speed',x=>x.toFixed(2)+' d/s','vspd');
+// 反演滑块（不重建光曲线）
+function bindFit(id,key,fmt,out){
+  const el=$(id),lab=$(out);
+  const sync=()=>{const raw=parseFloat(el.value);state[key]=raw;lab.innerHTML=fmt(raw);
+    el.style.setProperty('--p',((raw-el.min)/(el.max-el.min)*100)+'%');updateFit();};
+  el.addEventListener('input',sync); sync();
+}
+bindFit('sDepFit','DepFit',x=>(x*100).toFixed(3)+' %','vDepFit');
+bindFit('saRFit','aRFit',x=>x.toFixed(1),'vaRFit');
+bindFit('sRstarFit','RstarFit',x=>x.toFixed(2)+' R☉','vRstarFit');
+
+$('cModel').addEventListener('change',e=>state.showModel=e.target.checked);
+$('cPhase').addEventListener('change',e=>state.fold=e.target.checked);
+$('cResid').addEventListener('change',e=>state.resid=e.target.checked);
+
+$('bPlay').addEventListener('click',togglePlay);
+function togglePlay(){state.running=!state.running;$('bPlay').textContent=state.running?'⏸ 暂停':'▶ 播放';}
+$('bStep').addEventListener('click',()=>{
+  // 跳到下一次 x>0 且 d 最小的凌星中点
+  let t=state.t, found=false;
+  for(let k=0;k<2000;k++){
+    t+=state.dtObs;
+    const P=planetSky(t);
+    if(P.x>0 && P.d/D.Rs<0.3){ found=true; break; }
+  }
+  state.t=t; state.nextObs=Math.min(state.nextObs,t);
+  updateReadouts(); updateFit();
+});
+$('bClear').addEventListener('click',clearObs);
+function clearObs(){obs.length=0;state.nextObs=0;state.t0=state.t;updateReadouts();updateFit();}
+$('bView').addEventListener('click',()=>{state.viewMode=(state.viewMode+1)%4;});
+
+$('bAuto').addEventListener('click',()=>{
+  state.DepFit=D.depth; state.aRFit=D.aR; state.RstarFit=state.Rstar;
+  $('sDepFit').value=D.depth; $('saRFit').value=D.aR; $('sRstarFit').value=state.Rstar;
+  ['sDepFit','saRFit','sRstarFit'].forEach(id=>{const el=$(id);el.style.setProperty('--p',((el.value-el.min)/(el.max-el.min)*100)+'%');});
+  $('vDepFit').textContent=(D.depth*100).toFixed(3)+' %';
+  $('vaRFit').textContent=D.aR.toFixed(1);
+  $('vRstarFit').textContent=state.Rstar.toFixed(2)+' R☉';
+  updateFit();
+});
+
+// 拖动轨道视角
+let dragging=false,lastX=0,lastY=0;
+cvOrbit.addEventListener('pointerdown',e=>{dragging=true;lastX=e.clientX;lastY=e.clientY;state.viewMode=-1;cvOrbit.setPointerCapture(e.pointerId);});
+cvOrbit.addEventListener('pointermove',e=>{if(!dragging)return;camAz+=(e.clientX-lastX)*0.006;camEl=Math.max(-1.4,Math.min(1.4,camEl+(e.clientY-lastY)*0.005));lastX=e.clientX;lastY=e.clientY;});
+cvOrbit.addEventListener('pointerup',()=>dragging=false);
+cvOrbit.addEventListener('pointercancel',()=>dragging=false);
+
+window.addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT'&&e.target.type!=='range')return;
+  if(e.code==='Space'){e.preventDefault();togglePlay();}
+  else if(e.key==='c'||e.key==='C'){clearObs();}
+  else if(e.key==='r'||e.key==='R'){resetAll();}
+});
+function resetAll(){
+  state.t=0;state.t0=0;state.nextObs=0;obs.length=0;
+  state.Mp=0;state.Rstar=1;state.Rp=11.2;state.P=3.5;state.e=0;state.inc=88;state.omega=90;
+  $('sMstar').value=1;$('sRstar').value=1;$('sRp').value=11.2;$('sP').value=3.5;$('se').value=0;$('sinc').value=88;$('som').value=90;
+  ['sMstar','sRstar','sRp','sP','se','sinc','som'].forEach(id=>{const el=$(id);el.style.setProperty('--p',((el.value-el.min)/(el.max-el.min)*100)+'%');});
+  $('vMstar').textContent='1.00 M☉';$('vRstar').textContent='1.00 R☉';$('vRp').textContent='11.20 R⊕';
+  $('vP').textContent='3.50 d';$('ve').textContent='0.000';$('vinc').textContent='88.0°';$('vom').textContent='90°';
+  buildLightCurve();updateReadouts();updateFit();
+}
+
+let rzT=null;
+window.addEventListener('resize',()=>{clearTimeout(rzT);rzT=setTimeout(()=>{buildLightCurve();drawOrbit();drawDisk();drawLC();},90);});
+
+/* 启动 */
+recompute(); buildCells(); buildLightCurve(); updateReadouts(); updateFit();
+state.nextObs=0;
+requestAnimationFrame(loop);
+</script>
+<script>
+/* KaTeX 渲染：把 data-tex 渲染为公式；失败则保留原纯文本 */
+window.addEventListener('load', function(){
+  if(!window.katex) return;
+  document.querySelectorAll('.eqblock[data-tex], .eq[data-tex]').forEach(function(el){
+    try{
+      window.katex.render(el.getAttribute('data-tex'), el, {displayMode:true, throwOnError:false, output:'html'});
+    }catch(e){ /* 保留回退文本 */ }
+  });
+});
+</script>
+</body>
+</html>

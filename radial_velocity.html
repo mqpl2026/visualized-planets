@@ -1,0 +1,1387 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>视向速度法测系外行星 · 原理可视化</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<style>
+:root{
+  --bg:#070a12;
+  --bg2:#0b1020;
+  --panel:#0f1526;
+  --panel2:#141c31;
+  --line:#1e2a45;
+  --line2:#2b3a5e;
+  --txt:#dce4f5;
+  --txt2:#8f9dbd;
+  --txt3:#5d6b8c;
+  --accent:#4fd6ff;
+  --accent2:#7c6bff;
+  --hot:#ff6b6b;
+  --warm:#ffb454;
+  --cool:#4fd6ff;
+  --good:#4ade80;
+  --mono:'JetBrains Mono','Consolas','Courier New',monospace;
+  --sans:'Noto Sans SC','Microsoft YaHei','PingFang SC',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:
+    radial-gradient(1200px 700px at 78% -10%, rgba(124,107,255,.16), transparent 60%),
+    radial-gradient(900px 600px at 8% 110%, rgba(79,214,255,.12), transparent 60%),
+    var(--bg);
+  color:var(--txt);
+  font-family:var(--sans);
+  font-weight:300;
+  -webkit-font-smoothing:antialiased;
+  min-height:100%;
+  padding:0 0 60px;
+}
+body::before{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:radial-gradient(rgba(255,255,255,.35) .5px, transparent .5px);
+  background-size:3px 3px;opacity:.05;
+}
+.wrap{position:relative;z-index:1;max-width:1560px;margin:0 auto;padding:0 22px}
+
+/* ---------- header ---------- */
+header{
+  padding:34px 0 22px;
+  border-bottom:1px solid var(--line);
+  margin-bottom:22px;
+  display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap;
+}
+h1{
+  font-size:clamp(24px,3.1vw,40px);font-weight:700;letter-spacing:-.02em;line-height:1.12;
+  background:linear-gradient(96deg,#fff 8%,var(--accent) 52%,var(--accent2) 96%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.sub{color:var(--txt2);font-size:13.5px;margin-top:9px;max-width:640px;line-height:1.75}
+.tag{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--accent);border:1px solid rgba(79,214,255,.32);border-radius:100px;
+  padding:5px 13px;white-space:nowrap;background:rgba(79,214,255,.06);
+}
+
+/* ---------- layout ---------- */
+.grid{display:grid;grid-template-columns:308px minmax(0,1fr);gap:20px;align-items:start}
+@media(max-width:1120px){.grid{grid-template-columns:1fr}}
+
+.card{
+  background:linear-gradient(180deg,var(--panel),var(--bg2));
+  border:1px solid var(--line);border-radius:14px;overflow:hidden;
+  box-shadow:0 18px 44px -30px rgba(0,0,0,.95);
+}
+.card h2{
+  font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--txt3);font-family:var(--mono);
+  padding:12px 16px;border-bottom:1px solid var(--line);
+  display:flex;align-items:center;gap:9px;background:rgba(255,255,255,.014);
+}
+.card h2 .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 9px var(--accent)}
+.card .body{padding:16px}
+
+/* ---------- controls ---------- */
+.ctl{margin-bottom:15px}
+.ctl:last-child{margin-bottom:0}
+.ctl label{
+  display:flex;justify-content:space-between;align-items:baseline;gap:8px;
+  font-size:12.5px;color:var(--txt2);margin-bottom:7px;
+}
+.ctl label .nm{color:var(--txt);font-weight:400}
+.ctl label .val{font-family:var(--mono);font-size:12px;color:var(--accent);font-weight:500}
+input[type=range]{
+  -webkit-appearance:none;appearance:none;width:100%;height:20px;background:transparent;cursor:pointer;
+}
+input[type=range]::-webkit-slider-runnable-track{
+  height:4px;border-radius:3px;
+  background:linear-gradient(90deg,var(--accent) var(--p,50%),#1d2740 var(--p,50%));
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:15px;height:15px;border-radius:50%;margin-top:-5.5px;
+  background:#eaf6ff;border:2px solid var(--accent);box-shadow:0 0 11px rgba(79,214,255,.6);
+  transition:transform .13s ease;
+}
+input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.22)}
+input[type=range]::-moz-range-track{height:4px;border-radius:3px;background:#1d2740}
+input[type=range]::-moz-range-progress{height:4px;border-radius:3px;background:var(--accent)}
+input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;background:#eaf6ff;border:2px solid var(--accent)}
+input[type=range]:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:5px}
+
+.sep{height:1px;background:var(--line);margin:16px -16px}
+
+button{
+  font-family:var(--sans);font-size:12.5px;color:var(--txt);cursor:pointer;
+  background:var(--panel2);border:1px solid var(--line2);border-radius:8px;
+  padding:8px 12px;transition:all .15s ease;
+}
+button:hover{border-color:var(--accent);color:#fff;background:#1a2440}
+button:active{transform:translateY(1px)}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button.pri{background:linear-gradient(180deg,rgba(79,214,255,.2),rgba(79,214,255,.07));border-color:rgba(79,214,255,.5);color:#e8f9ff}
+button.on{border-color:var(--accent);color:var(--accent);background:rgba(79,214,255,.12)}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap}
+.btnrow button{flex:1;min-width:0;white-space:nowrap}
+
+/* ---------- canvases ---------- */
+.canvas-box{position:relative;width:100%;background:#05070d}
+canvas{display:block;width:100%;height:100%}
+#orbitWrap{height:min(46vh,430px)}
+#specWrap{height:150px}
+#rvWrap{height:262px}
+@media(max-width:640px){#orbitWrap{height:300px}#rvWrap{height:220px}}
+
+.legend{
+  position:absolute;top:10px;left:12px;display:flex;flex-direction:column;gap:5px;
+  font-family:var(--mono);font-size:10px;color:var(--txt3);pointer-events:none;
+}
+.legend span{display:flex;align-items:center;gap:6px}
+.legend i{width:9px;height:9px;border-radius:2px;display:block}
+
+.overlay-note{
+  position:absolute;bottom:9px;left:12px;font-family:var(--mono);font-size:10px;
+  color:var(--txt3);pointer-events:none;
+}
+
+/* ---------- readouts ---------- */
+.readouts{display:grid;grid-template-columns:repeat(auto-fit,minmax(146px,1fr));gap:1px;background:var(--line)}
+.ro{background:var(--panel);padding:13px 15px}
+.ro .k{font-size:10.5px;color:var(--txt3);font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase}
+.ro .v{font-family:var(--mono);font-size:19px;font-weight:500;margin-top:5px;letter-spacing:-.01em}
+.ro .u{font-size:11px;color:var(--txt3);margin-left:4px;font-family:var(--sans)}
+.ro.hl .v{color:var(--accent)}
+.ro.warm .v{color:var(--warm)}
+.ro.good .v{color:var(--good)}
+
+/* ---------- physics notes ---------- */
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(268px,1fr));gap:16px;margin-top:20px}
+.note{background:linear-gradient(180deg,var(--panel),var(--bg2));border:1px solid var(--line);border-radius:14px;padding:18px}
+.note h3{
+  font-size:13.5px;font-weight:500;color:#fff;margin-bottom:9px;
+  display:flex;align-items:center;gap:9px;
+}
+.note h3 .num{
+  font-family:var(--mono);font-size:10px;color:var(--bg);background:var(--accent);
+  width:19px;height:19px;border-radius:5px;display:grid;place-items:center;font-weight:700;flex:none;
+}
+.note p{font-size:12.7px;line-height:1.85;color:var(--txt2)}
+.note p+p{margin-top:8px}
+.eq{
+  font-family:var(--mono);font-size:12px;color:var(--accent);background:rgba(79,214,255,.07);
+  border-left:2px solid var(--accent);padding:9px 12px;border-radius:0 7px 7px 0;margin:10px 0;
+  overflow-x:auto;white-space:nowrap;line-height:1.7;
+}
+.eq[data-tex]{white-space:normal;font-family:inherit}
+.eq[data-tex] .katex{font-size:1.0em;color:var(--accent)}
+b{color:var(--txt);font-weight:500}
+.hl-c{color:var(--accent)}
+.hl-w{color:var(--warm)}
+.hl-h{color:var(--hot)}
+.hl-g{color:var(--good)}
+
+/* ---------- fit panel ---------- */
+.fitgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px}
+.verdict{
+  margin-top:14px;padding:13px 15px;border-radius:10px;font-size:12.7px;line-height:1.75;
+  border:1px solid var(--line2);background:var(--panel2);
+}
+.verdict b{font-family:var(--mono)}
+
+.checkrow{display:flex;align-items:center;gap:9px;font-size:12.5px;color:var(--txt2);cursor:pointer;user-select:none;margin-top:11px}
+.checkrow input{accent-color:var(--accent);width:15px;height:15px;cursor:pointer}
+
+.foot{margin-top:30px;padding-top:16px;border-top:1px solid var(--line);color:var(--txt3);font-size:11.5px;font-family:var(--mono);line-height:1.9}
+.kbd{font-family:var(--mono);font-size:10.5px;background:var(--panel2);border:1px solid var(--line2);border-radius:4px;padding:1px 6px;color:var(--txt2)}
+
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* ===== 理论推导文档 ===== */
+.doc{margin-top:34px;border:1px solid var(--line);border-radius:16px;overflow:hidden;
+  background:linear-gradient(180deg,#0c1122,#080b16)}
+.doc>.dochead{padding:20px 24px;border-bottom:1px solid var(--line);
+  background:linear-gradient(90deg,rgba(79,214,255,.08),transparent)}
+.doc>.dochead h2{font-size:20px;font-weight:700;color:#fff;letter-spacing:-.01em}
+.doc>.dochead p{color:var(--txt2);font-size:12.7px;margin-top:7px;line-height:1.7}
+.doc .docbody{padding:8px 24px 26px}
+.doc-toc{display:flex;flex-wrap:wrap;gap:8px;padding:16px 0;border-bottom:1px dashed var(--line);margin-bottom:8px}
+.doc-toc a{font-family:var(--mono);font-size:11px;color:var(--accent);text-decoration:none;
+  border:1px solid var(--line2);border-radius:100px;padding:5px 12px;transition:all .15s}
+.doc-toc a:hover{border-color:var(--accent);background:rgba(79,214,255,.08)}
+.deriv{padding:22px 0;border-bottom:1px solid var(--line)}
+.deriv:last-child{border-bottom:none}
+.deriv h3{font-size:16px;font-weight:600;color:#fff;margin-bottom:6px;display:flex;align-items:baseline;gap:11px}
+.deriv h3 .secno{font-family:var(--mono);font-size:12px;color:var(--bg);background:var(--accent);
+  border-radius:6px;padding:2px 9px;font-weight:700;flex:none}
+.deriv h4{font-size:13.5px;font-weight:500;color:var(--accent);margin:16px 0 6px}
+.deriv p{font-size:13.2px;line-height:1.95;color:var(--txt2);margin:8px 0}
+.deriv .eqblock{font-family:var(--mono);font-size:13px;color:#e9eefb;background:rgba(255,255,255,.028);
+  border:1px solid var(--line);border-radius:9px;padding:13px 16px;margin:11px 0;overflow-x:auto;line-height:1.95;white-space:pre}
+.deriv .eqblock .c{color:var(--txt3)}
+.deriv .eqblock .r{color:var(--accent)}
+.deriv .eqblock .b{color:var(--accent2)}
+.deriv .eqblock .katex{font-size:1.02em}
+.deriv .eqblock .katex-display{margin:0}
+.deriv .eqblock[data-tex]{white-space:normal}
+.deriv ul{margin:8px 0 8px 4px;list-style:none}
+.deriv li{font-size:13px;line-height:1.85;color:var(--txt2);padding-left:20px;position:relative;margin:5px 0}
+.deriv li::before{content:"▸";position:absolute;left:0;color:var(--accent)}
+.deriv .box{border-left:3px solid var(--good);background:rgba(74,222,128,.06);
+  padding:11px 15px;border-radius:0 8px 8px 0;margin:12px 0;font-size:12.8px;line-height:1.8;color:var(--txt2)}
+.deriv .box b{color:var(--good)}
+.deriv .warn{border-left:3px solid var(--hot);background:rgba(255,107,107,.06)}
+.deriv .warn b{color:var(--hot)}
+.var{font-family:var(--mono);color:var(--accent);font-size:12.5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div>
+    <h1>视向速度法 · 寻找系外行星</h1>
+    <div class="sub">
+      恒星被看不见的行星拖著绕共同质心运动。我们看不到行星，却能看到恒星的光谱线
+      随它朝向／背离我们而<strong style="color:#fff;font-weight:400">周期性红移与蓝移</strong>。
+      下面这张可交互的星图实时演示从「轨道运动」到「开普勒轨道根数拟合」的完整链条。
+    </div>
+  </div>
+  <div class="tag">Radial Velocity · Doppler Wobble</div>
+</header>
+
+<div class="grid">
+
+  <!-- ============ 控制面板 ============ -->
+  <div>
+    <div class="card">
+      <h2><i class="dot"></i>系统参数</h2>
+      <div class="body">
+
+        <div class="ctl">
+          <label><span class="nm">恒星质量 M★</span><span class="val" id="vMstar">1.00 M☉</span></label>
+          <input type="range" id="sMstar" min="0.1" max="3" step="0.01" value="1">
+        </div>
+        <div class="ctl">
+          <label><span class="nm">行星质量 M<sub>p</sub></span><span class="val" id="vMp">1.00 M<sub>J</sub></span></label>
+          <input type="range" id="sMp" min="0.0005" max="15" step="0.0005" value="1">
+        </div>
+        <div class="ctl">
+          <label><span class="nm">轨道周期 P</span><span class="val" id="vP">365.0 d</span></label>
+          <input type="range" id="sP" min="1.5" max="5000" step="0.5" value="365">
+        </div>
+        <div class="ctl">
+          <label><span class="nm">偏心率 e</span><span class="val" id="ve">0.10</span></label>
+          <input type="range" id="se" min="0" max="0.85" step="0.005" value="0.1">
+        </div>
+        <div class="ctl">
+          <label><span class="nm">轨道倾角 i <span style="color:var(--txt3)">(90°=侧视)</span></span><span class="val" id="vinc">60.0°</span></label>
+          <input type="range" id="sinc" min="1" max="90" step="0.5" value="60">
+        </div>
+        <div class="ctl">
+          <label><span class="nm">近星点角 ω</span><span class="val" id="vom">0°</span></label>
+          <input type="range" id="som" min="0" max="360" step="1" value="0">
+        </div>
+        <div class="ctl">
+          <label><span class="nm">系统性速度 γ</span><span class="val" id="vgam">0.0 km/s</span></label>
+          <input type="range" id="sgam" min="-60" max="60" step="0.1" value="0">
+        </div>
+
+        <div class="sep"></div>
+
+        <div class="ctl">
+          <label><span class="nm">观测采样间隔</span><span class="val" id="vdt">2.0 d</span></label>
+          <input type="range" id="sdt" min="0.2" max="30" step="0.1" value="2">
+        </div>
+        <div class="ctl">
+          <label><span class="nm">测光噪声 σ</span><span class="val" id="vsig">3.0 m/s</span></label>
+          <input type="range" id="ssig" min="0" max="40" step="0.5" value="3">
+        </div>
+
+        <label class="checkrow"><input type="checkbox" id="cModel" checked>显示真实模型曲线</label>
+        <label class="checkrow"><input type="checkbox" id="cPhase">相位折叠（按真实周期对齐数据）</label>
+        <label class="checkrow"><input type="checkbox" id="cSky" checked>显示天球平面投影</label>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <h2><i class="dot" style="background:var(--good);box-shadow:0 0 9px var(--good)"></i>仿真控制</h2>
+      <div class="body">
+        <div class="ctl">
+          <label><span class="nm">时间流速</span><span class="val" id="vspd">25 d/s</span></label>
+          <input type="range" id="sspd" min="0.5" max="200" step="0.5" value="25">
+        </div>
+        <div class="btnrow" style="margin-bottom:8px">
+          <button class="pri" id="bPlay">⏸ 暂停</button>
+          <button id="bStep">单步 +1 P</button>
+        </div>
+        <div class="btnrow">
+          <button id="bClear">清空观测</button>
+          <button id="bView">切换视角</button>
+        </div>
+        <div class="foot" style="margin-top:12px;padding-top:10px">
+          快捷键：<span class="kbd">空格</span> 播放/暂停 · <span class="kbd">C</span> 清空 · <span class="kbd">R</span> 复位
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 主视图 ============ -->
+  <div>
+    <div class="card">
+      <h2><i class="dot"></i>① 轨道与视线几何</h2>
+      <div class="canvas-box" id="orbitWrap">
+        <canvas id="orbit"></canvas>
+        <div class="legend">
+          <span><i style="background:#ffd66b;box-shadow:0 0 8px #ffd66b"></i>恒星（绕质心摆动）</span>
+          <span><i style="background:#6ea8ff"></i>行星</span>
+          <span><i style="background:#4ade80"></i>系统质心</span>
+          <span><i style="background:#ff6b6b"></i>视线（观测者方向）</span>
+        </div>
+        <div class="overlay-note" id="orbitNote"></div>
+      </div>
+      <div class="readouts">
+        <div class="ro hl"><div class="k">视向速度振幅 K</div><div class="v" id="rK">–<span class="u">m/s</span></div></div>
+        <div class="ro"><div class="k">恒星轨道半长径 a★</div><div class="v" id="rAst">–<span class="u">Gm</span></div></div>
+        <div class="ro"><div class="k">行星轨道半长径 a<sub>p</sub></div><div class="v" id="rAp">–<span class="u">AU</span></div></div>
+        <div class="ro"><div class="k">恒星空间速度振幅</div><div class="v" id="rKtrue">–<span class="u">m/s</span></div></div>
+        <div class="ro warm"><div class="k">当前 v<sub>r</sub></div><div class="v" id="rvr">–<span class="u">km/s</span></div></div>
+        <div class="ro good"><div class="k">累计观测 / 周期数</div><div class="v" id="rN">0<span class="u">/ 0.00</span></div></div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1.45fr);gap:20px;margin-top:20px" id="midRow">
+      <div class="card">
+        <h2><i class="dot" style="background:var(--warm);box-shadow:0 0 9px var(--warm)"></i>② 恒星光谱：多普勒位移</h2>
+        <div class="canvas-box" id="specWrap">
+          <canvas id="spec"></canvas>
+          <div class="overlay-note">窗口 5183 Å 附近 · 上＝实验室静止波长 · 下＝实测</div>
+        </div>
+      </div>
+      <div class="card">
+        <h2><i class="dot" style="background:var(--accent2);box-shadow:0 0 9px var(--accent2)"></i>③ 视向速度曲线 v<sub>r</sub>(t)</h2>
+        <div class="canvas-box" id="rvWrap">
+          <canvas id="rv"></canvas>
+        </div>
+      </div>
+    </div>
+    <style>@media(max-width:900px){#midRow{grid-template-columns:1fr!important}}</style>
+
+    <!-- ============ 反演 ============ -->
+    <div class="card" style="margin-top:20px">
+      <h2><i class="dot" style="background:var(--hot);box-shadow:0 0 9px var(--hot)"></i>④ 从曲线反演行星：你能读出多少？</h2>
+      <div class="body">
+        <p style="font-size:12.7px;color:var(--txt2);line-height:1.8;margin-bottom:16px">
+          真实的观测者只能拿到右上方那些带噪声的数据点。用下面的滑块去「拟合」它们：先估出
+          <b class="hl-c">周期 P</b>（曲线多久重复一次）与 <b class="hl-c">半振幅 K</b>（偏离 γ 的最大幅度），
+          程序会立刻给出能反推出的行星质量下限。
+        </p>
+        <div class="fitgrid">
+          <div>
+            <div class="ctl">
+              <label><span class="nm">拟合周期 P<sub>fit</sub></span><span class="val" id="vPfit">365.0 d</span></label>
+              <input type="range" id="sPfit" min="1.5" max="5000" step="0.5" value="365">
+            </div>
+            <div class="ctl">
+              <label><span class="nm">拟合振幅 K<sub>fit</sub></label><span class="val" id="vKfit">24.7 m/s</span></label>
+              <input type="range" id="sKfit" min="0" max="2000" step="0.1" value="24.7">
+            </div>
+            <div class="ctl">
+              <label><span class="nm">假设倾角 i<sub>assume</sub></span><span class="val" id="viFit">90°</span></label>
+              <input type="range" id="siFit" min="1" max="90" step="0.5" value="90">
+            </div>
+            <button id="bAuto" style="width:100%">↺ 自动拟合到最优值</button>
+          </div>
+          <div>
+            <div class="readouts" style="border-radius:10px;overflow:hidden;border:1px solid var(--line)">
+              <div class="ro hl"><div class="k">M<sub>p</sub> sin i（质量下限）</div><div class="v" id="rMsin">–<span class="u">M<sub>J</sub></span></div></div>
+              <div class="ro warm"><div class="k">M<sub>p</sub>（按假设 i）</div><div class="v" id="rMfit">–<span class="u">M<sub>J</sub></span></div></div>
+              <div class="ro"><div class="k">拟合残差 RMS</div><div class="v" id="rRms">–<span class="u">m/s</span></div></div>
+              <div class="ro good"><div class="k">相对真实值</div><div class="v" id="rErr">–<span class="u">%</span></div></div>
+            </div>
+            <div class="verdict" id="verdict">
+              调整滑块，让拟合曲线贴近数据点。
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 原理说明 ============ -->
+    <div class="notes">
+      <div class="note">
+        <h3><span class="num">1</span>行星在拉动恒星</h3>
+        <p>行星与恒星其实围绕两者的<b>共同质心</b>转。恒星被拽出的轨道半长径为
+          a<sub>★</sub> = a<sub>p</sub> · M<sub>p</sub> / (M<sub>★</sub> + M<sub>p</sub>)，
+          因此行星越重、离恒星越近，恒星就摆得越明显。</p>
+        <div class="eq" data-tex="a_\star = a_p\,\frac{M_p}{M_\star+M_p}">a★ = a_p · M_p / (M★ + M_p)</div>
+        <p>木星在太阳中引起的 a<sub>★</sub> 约 <b class="hl-c">742 Gm</b>（约为日地距离的 0.5%）；
+          地球引起的仅约 <b class="hl-c">449 km</b>。这就是该方法对<b>大质量、短周期</b>行星最敏感的原因。</p>
+      </div>
+
+      <div class="note">
+        <h3><span class="num">2</span>多普勒效应：速度 → 频移</h3>
+        <p>观测者沿视线方向只接收到恒星速度的 X 分量。根据多普勒公式，谱线波长随之平移：</p>
+        <div class="eq" data-tex="\frac{\Delta\lambda}{\lambda_0} = \frac{v_r}{c},\qquad v_r>0\;\Rightarrow\;\text{红移}">Δλ/λ₀ = v_r / c　，　v_r &gt; 0 → 红移</div>
+        <p>恒星接近时谱线<span class="hl-c">蓝移</span>、变短；远离时<span class="hl-h">红移</span>、变长。
+          在上方光谱图中，把窗口放大到 Å 量级就能直接看到整条谱系的平移。</p>
+        <p>典型恒星吸收线附近的分辨本领要求 v<sub>r</sub> 测量精度需优于 <b class="hl-w">1 m/s</b>（≈ 3×10<sup>-9</sup> 的相对波长精度）。</p>
+      </div>
+
+      <div class="note">
+        <h3><span class="num">3</span>开普勒运动 → 速度曲线</h3>
+        <p>圆轨道给出正弦曲线；偏心轨道则变成<b>非正弦</b>的“尖峰”形——近星点走得快，远星点走得慢。
+          由开普勒第三定律与角动量守恒可导出：</p>
+        <div class="eq" data-tex="v_r(t) = K\,[\cos(\nu+\omega) + e\cos\omega] + \gamma">v_r(t) = K[cos(ν+ω) + e·cos ω] + γ</div>
+        <div class="eq" data-tex="K = \left(\frac{2\pi G}{P}\right)^{1/3}\frac{M_p\sin i}{(M_\star+M_p)^{2/3}}\,(1-e^2)^{-1/2}">K = (2πG/P)<sup>1/3</sup> · M_p sin i / (M★+M_p)<sup>2/3</sup> · (1−e²)<sup>−1/2</sup></div>
+        <p>所以曲线振幅直接给出 <b class="hl-c">M<sub>p</sub> sin i</b>，而不是 M<sub>p</sub> 本身。</p>
+      </div>
+
+      <div class="note">
+        <h3><span class="num">4</span>为什么只能给出 M sin i？</h3>
+        <p>倾角 i 是视线与轨道法线的夹角。若轨道侧视（i = 90°），恒星摆幅全部落在视线方向，
+          K 最大；若轨道正对观测者（i → 0°），恒星前后摆动<b>完全不可见</b>。</p>
+        <div class="eq" data-tex="M_p\sin i = K\,(1-e^2)^{1/2}\,M_\star^{2/3}\left(\frac{P}{2\pi G}\right)^{1/3}">M_p sin i = K(1−e²)<sup>1/2</sup> M★<sup>2/3</sup> (P/2πG)<sup>1/3</sup></div>
+        <p>因此 RV 法永远得到行星质量的<b class="hl-w">下限</b>。想要真实质量，需要凌日法（i ≈ 90°）、
+          天体测量或微透镜给出独立约束。把「假设倾角」调到 90° 以外的小角度，就能直观看到低估有多严重。</p>
+      </div>
+
+      <div class="note">
+        <h3><span class="num">5</span>真实观测是怎么做的</h3>
+        <p>光谱被切成数十阶，每阶提取成相关函数（CCF），其重心给出一次 v<sub>r</sub> 测量。
+          每次曝光带来几 m/s 的随机误差，且需要<b>长时间基线</b>才能锁定周期：</p>
+        <p>· <b class="hl-c">1–2 个周期</b>：只能看到摆动，周期与质量都高度不确定。<br>
+          · <b class="hl-c">5–10 个周期</b>：周期锁定，K 可测，M sin i 收敛。<br>
+          · <b class="hl-c">多年</b>：还能测出行星质量随时间的小幅变化 → 检出<b>额外行星</b>。</p>
+        <p>试着把采样间隔调大、噪声调高，观察数据点如何逐渐「淹没」信号。</p>
+      </div>
+
+      <div class="note">
+        <h3><span class="num">6</span>这个方法的历史</h3>
+        <p><b class="hl-c">1995</b>，Michel Mayor 与 Didier Queloz 在 L'OBS de Haute-Provence 用
+          ELODIE 光谱仪在飞马座 51 中发现第一颗类日恒星旁的系外行星 51 Pegasi b，
+          K ≈ <b class="hl-w">56 m/s</b>、P = <b>4.23 天</b>——一颗热木星，彻底改变了行星形成理论。</p>
+        <p>三十多年后，视向速度法与凌日法共同把确认的系外行星数量推过 <b class="hl-g">5000</b> 颗，
+          并让人类第一次测到了<b class="hl-c">地球质量</b>级别的行星（如 Proxima b、TRAPPIST-1 系统）。</p>
+      </div>
+    </div>
+
+    <div class="foot">
+      模型：两体开普勒问题 · 牛顿引力 · 视线方向取 X 轴 · 无相对论修正<br>
+      常数：G = 6.674×10⁻¹¹ m³kg⁻¹s⁻² · 1 M☉ = 1.989×10³⁰ kg · 1 M<sub>J</sub> = 1.898×10²⁷ kg · c = 299 792.458 km/s
+    </div>
+
+    <!-- ===== 完整理论推导 ===== -->
+    <div class="doc">
+      <div class="dochead">
+        <h2>视向速度法测系外行星 · 完整理论推导</h2>
+        <p>从牛顿引力下的两体问题，到开普勒方程，再到多普勒投影与行星质量函数。所有公式逐步推导，符号与上方仿真一一对应。</p>
+      </div>
+      <div class="docbody">
+        <div class="doc-toc">
+          <a href="#r1">1 两体问题与质心</a>
+          <a href="#r2">2 相对轨道与开普勒第三定律</a>
+          <a href="#r3">3 开普勒方程</a>
+          <a href="#r4">4 轨道速度</a>
+          <a href="#r5">5 视向速度投影</a>
+          <a href="#r6">6 半振幅 K 与质量函数</a>
+          <a href="#r7">7 正弦曲线（圆轨道）</a>
+          <a href="#r8">8 观测极限与噪声</a>
+          <a href="#r9">9 历史与探测</a>
+        </div>
+
+        <div class="deriv" id="r1">
+          <h3><span class="secno">1</span>两体问题与共同质心</h3>
+          <p>恒星（质量 <span class="var">M★</span>）与行星（质量 <span class="var">M_p</span>）在相互引力下绕共同质心运动。设质心位于原点，由定义：</p>
+          <div class="eqblock" data-tex="M_\star\,\vec r_\star + M_p\,\vec r_p = 0 \;\Longrightarrow\; \vec r_\star = -\frac{M_p}{M_\star+M_p}\,\vec r,\quad \vec r_p = \frac{M_\star}{M_\star+M_p}\,\vec r"><span class="r">M★·r★ + M_p·r_p = 0</span>      <span class="c">// 质心条件</span>
+⟹  <span class="r">r★ = −(M_p/(M★+M_p))·r</span> ,  <span class="r">r_p = (M★/(M★+M_p))·r</span>
+其中 r = r_p − r★ 为相对位置矢量。</div>
+          <p>恒星轨道的半长径因此为：</p>
+          <div class="eqblock" data-tex="a_\star = a_p\,\frac{M_p}{M_\star+M_p}"><span class="r">a★ = a_p · M_p / (M★ + M_p)</span></div>
+          <p>量级感：木星使太阳的 <span class="var">a★≈742 Gm</span>（日地距离的 0.5%）；地球仅 <span class="var">≈449 km</span>。这正是 RV 法对<b>大质量、短周期</b>行星最敏感的根本原因。</p>
+        </div>
+
+        <div class="deriv" id="r2">
+          <h3><span class="secno">2</span>相对轨道与开普勒第三定律</h3>
+          <p>两体问题可化为一个约化质量 <span class="var">μ=M★M_p/(M★+M_p)</span> 在中心势 <span class="var">−GM★M_p/r</span> 中的运动。相对运动满足：</p>
+          <div class="eqblock" data-tex="\varepsilon = \tfrac{v^2}{2} - \frac{G(M_\star+M_p)}{r} = -\frac{G(M_\star+M_p)}{2a} \;\text{(比机械能)} \\ h = |\vec r \times \vec v| = \sqrt{G(M_\star+M_p)\,a(1-e^2)} \;\text{(角动量)} \\ T = 2\pi\sqrt{\frac{a^3}{G(M_\star+M_p)}} \;\Longrightarrow\; \boxed{\,a^3 = \frac{G(M_\star+M_p)\,P^2}{4\pi^2}\,}"><span class="c">// 比机械能守恒（椭圆轨道 e<1）</span>
+ε = v²/2 − G(M★+M_p)/r = −G(M★+M_p)/(2a)
+
+<span class="c">// 角动量守恒 → 面积速度恒定（第二定律）</span>
+h = |r × v| = √[G(M★+M_p)·a(1−e²)]
+
+<span class="c">// 周期</span>
+T = 2π·a / v̄ = 2π√[a³/G(M★+M_p)]
+<span class="r">⟹  a³ = G(M★+M_p)·P²/(4π²)</span>   <span class="c">// 开普勒第三定律（牛顿形式）</span></div>
+        </div>
+
+        <div class="deriv" id="r3">
+          <h3><span class="secno">3</span>开普勒方程：从时间到位置</h3>
+          <p>引入偏近点角 <span class="var">E</span>、平近点角 <span class="var">M</span>、真近点角 <span class="var">ν</span>。平近点角随时间均匀推进：</p>
+          <div class="eqblock" data-tex="M = n\,(t-\tau), \qquad n = \frac{2\pi}{P} = \sqrt{\frac{G(M_\star+M_p)}{a^3}}"><span class="b">M = n·(t − τ)</span> ,   <span class="b">n = 2π/P = √[G(M★+M_p)/a³]</span></div>
+          <p>几何关系给出开普勒方程（超越方程，需求解 <span class="var">E</span>）：</p>
+          <div class="eqblock" data-tex="M = E - e\sin E"><span class="r">M = E − e·sin E</span></div>
+          <p>用牛顿迭代求解（本仿真即用此法）：<span class="var">E_{k+1}=E_k − (E_k−e sin E_k−M)/(1−e cos E_k)</span>。再由 <span class="var">E</span> 求 <span class="var">ν</span> 与 <span class="var">r</span>：</p>
+          <div class="eqblock" data-tex="r = a(1 - e\cos E), \qquad \tan\frac{\nu}{2} = \sqrt{\frac{1+e}{1-e}}\;\tan\frac{E}{2}">r = a(1 − e·cos E)
+tan(ν/2) = √[(1+e)/(1−e)]·tan(E/2)</div>
+        </div>
+
+        <div class="deriv" id="r4">
+          <h3><span class="secno">4</span>轨道速度</h3>
+          <p>对 <span class="var">r=a(cos E−e, √(1−e²) sin E)</span> 关于时间求导，并用 <span class="var">dE/dt = n/(1−e cos E)</span>：</p>
+          <div class="eqblock" data-tex="\vec v = \frac{n\,a}{1-e\cos E}\,\bigl(-\sin E,\;\sqrt{1-e^2}\,\cos E\bigr) \qquad\text{vis-viva:}\quad v^2 = G(M_\star+M_p)\left(\frac{2}{r}-\frac{1}{a}\right)">\vec v = (n·a / (1 − e·cos E))·(−sin E, √(1−e²)·cos E)
+<span class="c">// 速度大小（vis-viva 方程）</span>
+<span class="r">v² = G(M★+M_p)·(2/r − 1/a)</span></div>
+          <p>近星点速度最大、远星点最小——这正是偏心轨道 RV 曲线呈尖峰状的来源。</p>
+        </div>
+
+        <div class="deriv" id="r5">
+          <h3><span class="secno">5</span>视向速度投影</h3>
+          <p>观测者沿 <span class="var">+X</span> 无穷远处看向原点，只能感知速度的 X 分量。设轨道面相对视线倾斜 <span class="var">i</span>、近星点方向偏离 <span class="var">ω</span>。将轨道面内坐标 <span class="var">(x',y')</span> 旋转：</p>
+          <div class="eqblock" data-tex="x = x'\cos\omega - y'\sin\omega \;\text{(视线方向)} \\ y = (x'\sin\omega + y'\cos\omega)\cos i \\ z = (x'\sin\omega + y'\cos\omega)\sin i \;\Longrightarrow\; \boxed{\,v_r = \tfrac{dx}{dt} + \gamma\,}">x  = x'·cos ω − y'·sin ω            <span class="c">// 视线方向</span>
+y  = (x'·sin ω + y'·cos ω)·cos i
+z  = (x'·sin ω + y'·cos ω)·sin i
+<span class="r">v_r = dx/dt + γ</span>   <span class="c">// γ 为视向速度系统性偏移（恒星本动 + 仪器）</span></div>
+          <p>只有 <span class="var">i=90°</span>（侧视）时全部速度落在视线方向；<span class="var">i→0°</span> 时摆动消失。这就是 <span class="var">sin i</span> 模糊的几何起源。</p>
+        </div>
+
+        <div class="deriv" id="r6">
+          <h3><span class="secno">6</span>半振幅 K 与质量函数</h3>
+          <p>把第 4、5 节合起来，视向速度半振幅定义为 <span class="var">K = |v_r|_max</span>（相对 <span class="var">γ</span>）。整理得 RV 法的核心公式：</p>
+          <div class="eqblock" data-tex="\boxed{\,K = \left(\frac{2\pi G}{P}\right)^{1/3}\frac{M_p\sin i}{(M_\star+M_p)^{2/3}}\;\frac{1}{\sqrt{1-e^2}}\,}"><span class="r">K = (2πG/P)^(1/3) · (M_p sin i)/(M★+M_p)^(2/3) · (1−e²)^(−1/2)</span></div>
+          <p>这就是<b>质量函数</b>。反解行星质量：</p>
+          <div class="eqblock" data-tex="M_p\sin i = K\sqrt{1-e^2}\,(M_\star+M_p)^{2/3}\left(\frac{P}{2\pi G}\right)^{1/3} \;\approx\; K\sqrt{1-e^2}\,M_\star^{2/3}\left(\frac{P}{2\pi G}\right)^{1/3} \;\text{(当 } M_p\ll M_\star\text{)}"><span class="r">M_p sin i = K·(1−e²)^(1/2)·(M★+M_p)^(2/3)·(P/2πG)^(1/3)</span>
+<span class="c">// 当 M_p≪M★ 时（绝大多数情况）：</span>
+<span class="r">M_p sin i ≈ K·(1−e²)^(1/2)·M★^(2/3)·(P/2πG)^(1/3)</span></div>
+          <div class="box"><b>关键：</b>RV 法直接给出的是 <span class="var">M_p sin i</span>，是行星真实质量的<b>下限</b>。要得到真实质量需独立约束 <span class="var">i</span>（凌星法、天体测量或微引力透镜）。</div>
+        </div>
+
+        <div class="deriv" id="r7">
+          <h3><span class="secno">7</span>正弦曲线（圆轨道特例）</h3>
+          <p>当 <span class="var">e=0</span>、<span class="var">ω=0</span>、<span class="var">i=90°</span> 时，<span class="var">ν=M=2π t/P</span>，代入得纯正弦：</p>
+          <div class="eqblock" data-tex="v_r(t) = K\cos\!\left(\frac{2\pi t}{P}\right) + \gamma"><span class="r">v_r(t) = K·cos(2π t/P) + γ</span></div>
+          <p>一般情形（任意 <span class="var">e,ω,i</span>）的完整表达式：</p>
+          <div class="eqblock" data-tex="v_r(t) = K\,[\cos(\nu(t)+\omega) + e\cos\omega] + \gamma"><span class="r">v_r(t) = K·[cos(ν(t)+ω) + e·cos ω] + γ</span></div>
+          <p>曲线形状编码了轨道偏心率与朝向；周期 <span class="var">P</span> 给出轨道尺寸（经开普勒定律），振幅 <span class="var">K</span> 给出 <span class="var">M_p sin i</span>。</p>
+        </div>
+
+        <div class="deriv" id="r8">
+          <h3><span class="secno">8</span>观测极限与噪声</h3>
+          <p>实测 <span class="var">v_r</span> 的精度受限于光子噪声、恒星活动（星斑、振荡、耀发）与仪器。恒星本身的抖动（jitter）量级约 <span class="var">0.5–3 m/s</span>（宁静星）到 <span class="var">10–50 m/s</span>（活动星）。可探测的最小 <span class="var">K</span> 近似：</p>
+          <div class="eqblock" data-tex="K_{\min} \approx \sqrt{\frac{\sigma^2}{N} + S_{\rm jitter}^2}\times(\text{置信因子}) \qquad \sigma:\text{单次精度},\; N:\text{观测数},\; S_{\rm jitter}:\text{恒星抖动}">K_min ≈ √(σ²/N + S_jitter²)·(某个置信因子)
+<span class="c">// σ 单次测速精度, N 观测数, S_jitter 恒星抖动</span></div>
+          <p>长期监测的回报：① <span class="var">1–2</span> 周期 → <span class="var">P</span> 与 <span class="var">K</span> 高度简并；② <span class="var">5–10</span> 周期 → <span class="var">M_p sin i</span> 收敛；③ 多年基线 → 测出 <span class="var">K</span> 的微小变化，暗示<b>第二颗行星</b>（n-body 拟合）。</p>
+          <div class="box warn"><b>常见陷阱：</b>① 视向速度偏移 <span class="var">γ</span> 会随恒星在银河中运动而变；② 恒星自转、斑点会引入周期性伪信号（与行星周期混淆）；③ 需要独立证认（凌星、直接成像、天体测量）来确认行星而非棕矮星/恒星。</div>
+        </div>
+
+        <div class="deriv" id="r9">
+          <h3><span class="secno">9</span>历史与探测</h3>
+          <p><b class="hl-c">1995</b> 年，Michel Mayor 与 Didier Queloz 在 Haute-Provence 用 <b class="hl-w">ELODIE</b> 阶梯光栅光谱仪发现飞马座 51 b：
+          <span class="var">P=4.23 天</span>、<span class="var">K≈56 m/s</span>——一颗热木星，公转周期比水星还短，彻底颠覆了行星形成理论（行星迁移）。二人获 2019 年诺贝尔物理学奖。</p>
+          <p>三十余年后，视向速度法与凌星法共同把确认的系外行星推过 <b class="hl-g">5000</b> 颗，并首次测到<b class="hl-c">地球质量级</b>行星（Proxima b、GJ 667Cc、TRAPPIST-1 系统）。当前前沿：用 ESPRESSO、EXPRES 等 <span class="var">&lt;10 cm/s</span> 的光谱仪寻找真正位于宜居带的岩质地球。</p>
+          <div class="box"><b>为什么仍重要：</b>凌星法只能测半径、且有几何偏置；RV 法测质量、可探测不凌星的行星。两者结合给出<b>密度</b>，是区分岩质／气态／冰质行星的唯一途径。这正是本仓库两个页面并置的意义。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+"use strict";
+/* ==================================================================
+   物理常量与状态
+================================================================== */
+const G    = 6.674e-11;
+const MSUN = 1.989e30;
+const MJUP = 1.898e27;
+const AU   = 1.496e11;
+const C_KM = 299792.458;
+const DAY  = 86400;
+
+const state = {
+  Mstar: 1.0, Mp: 1.0, P: 365, e: 0.10, inc: 60, omega: 0, gamma: 0,
+  dtObs: 2, sigma: 3, speed: 25,
+  t: 0, t0: 0, nextObs: 0, running: true, viewMode: 0,
+  showModel: true, fold: false, showSky: true,
+  Pfit: 365, Kfit: 24.7, iFit: 90
+};
+const obs = [];   // {t, v}
+
+const $ = id => document.getElementById(id);
+
+/* ==================================================================
+   开普勒方程求解
+================================================================== */
+function keplerE(M, e){
+  M = ((M + Math.PI) % (2*Math.PI) + 2*Math.PI) % (2*Math.PI) - Math.PI;
+  let E = M + e*Math.sin(M);
+  for(let k=0;k<60;k++){
+    const f  = E - e*Math.sin(E) - M;
+    const fp = 1 - e*Math.cos(E);
+    const d  = f/fp;
+    E -= d;
+    if(Math.abs(d) < 1e-13) break;
+  }
+  return E;
+}
+
+/* ==================================================================
+   派生量
+================================================================== */
+let D = {};
+function recompute(){
+  const Ms = state.Mstar * MSUN;
+  const Mp = state.Mp   * MJUN();
+  function MJUN(){ return MJUP; }
+  const Mt = Ms + Mp;
+  const Ps = state.P * DAY;
+
+  // 开普勒第三定律：行星轨道半长径
+  const aP = Math.cbrt(G*Mt*Ps*Ps/(4*Math.PI*Math.PI));
+  const aS = aP * Mp / Mt;
+
+  // 视向速度半振幅 K (m/s)
+  const K = Math.cbrt(2*Math.PI*G/Ps) * Mp*Math.sin(state.inc*Math.PI/180)
+            / Math.pow(Mt, 2/3) / Math.sqrt(1 - state.e*state.e);
+
+  // 恒星空间速度振幅
+  const n  = 2*Math.PI/Ps;
+  const Ktrue = aS * n / Math.sqrt(1 - state.e*state.e);
+
+  D = { Ms, Mp, Mt, aP, aS, K, Ktrue, n, Ps, Mtot: Mt };
+}
+
+/* ==================================================================
+   恒星在时刻 t 的三维位置与速度（单位：m, m/s）
+================================================================== */
+function stateAt(t){
+  const w  = state.omega*Math.PI/180;
+  const i  = state.inc*Math.PI/180;
+  const cw = Math.cos(w), sw = Math.sin(w);
+  const ci = Math.cos(i), si = Math.sin(i);
+
+  const M = D.n*((t - state.t0)*DAY);
+  const E = keplerE(M, state.e);
+  const b = Math.sqrt(1 - state.e*state.e);
+
+  // 轨道平面坐标
+  const xp =  D.aS*(Math.cos(E) - state.e);
+  const yp =  D.aS*b*Math.sin(E);
+  const dEdt = D.n/(1 - state.e*Math.cos(E));
+  const vxp = -D.aS*Math.sin(E)*dEdt;
+  const vyp =  D.aS*b*Math.cos(E)*dEdt;
+
+  // 旋转到以 X 轴为视线的坐标系
+  const R = {
+    x:  xp*cw - yp*sw,
+    y: (xp*sw + yp*cw)*ci,
+    z: (xp*sw + yp*cw)*si,
+    vx: vxp*cw - vyp*sw,
+    vy: (vxp*sw + vyp*cw)*ci,
+    vz: (vxp*sw + vyp*cw)*si,
+    E, M
+  };
+  // 行星 = 恒星的按比例反向像（质心在原点：Ms*Rs + Mp*Rp = 0）
+  const s = -D.Ms/D.Mp;
+  R.px = s*R.x;
+  R.py = s*R.y;
+  R.pz = s*R.z;
+  return R;
+}
+
+/* 视向速度 (km/s) */
+function vrOf(t){
+  const R = stateAt(t);
+  return (R.vx/1000) + state.gamma;
+}
+
+/* ==================================================================
+   Canvas 基础
+================================================================== */
+function setupCanvas(cv){
+  const dpr = Math.min(window.devicePixelRatio||1, 2);
+  const r = cv.getBoundingClientRect();
+  cv.width  = Math.max(1, Math.round(r.width*dpr));
+  cv.height = Math.max(1, Math.round(r.height*dpr));
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {ctx, w:r.width, h:r.height};
+}
+
+const cvOrbit = $('orbit'), cvSpec = $('spec'), cvRv = $('rv');
+
+/* ---------- 3D 投影 ---------- */
+let camAz = -0.62, camEl = 0.40;
+function project(p, w, h, scale, cx, cy){
+  const ca = Math.cos(camAz), sa = Math.sin(camAz);
+  const ce = Math.cos(camEl), se = Math.sin(camEl);
+  const u = -p.x*sa + p.y*ca;
+  const v =  p.x*ca*se + p.y*sa*se - p.z*ce;
+  const d =  p.x*ce*ca + p.y*ce*sa + p.z*se;
+  return { sx: cx + u*scale, sy: cy - v*scale, d };
+}
+
+/* ==================================================================
+   ① 轨道视图
+================================================================== */
+function drawOrbit(){
+  // 视角模式：0=默认斜视 1=近侧视(沿视线) 2=俯视(轨道面) 3=仰视
+  const VIEWS=[[-0.62,0.40],[0.02,0.10],[0.0,1.35],[-1.2,0.55]];
+  const vv=VIEWS[((state.viewMode%VIEWS.length)+VIEWS.length)%VIEWS.length];
+  camAz=vv[0]; camEl=vv[1];
+  const {ctx,w,h} = setupCanvas(cvOrbit);
+  ctx.clearRect(0,0,w,h);
+
+  // 背景星场
+  const g = ctx.createRadialGradient(w*0.5,h*0.45,10,w*0.5,h*0.5,Math.max(w,h)*0.75);
+  g.addColorStop(0,'#0b1224'); g.addColorStop(1,'#04060c');
+  ctx.fillStyle=g; ctx.fillRect(0,0,w,h);
+
+  const R = stateAt(state.t);
+  const scale = Math.min(w,h)*0.34 / Math.max(D.aP, 1e-9);
+  const starScale = scale;
+  const cx = w*0.52, cy = h*0.5;
+
+  // 星点
+  ctx.save();
+  for(let k=0;k<130;k++){
+    const sx = ((k*97.13)%1)*w, sy = ((k*57.7)%1)*h;
+    const a = 0.06 + 0.22*(((k*31)%7)/7);
+    ctx.fillStyle = `rgba(190,215,255,${a})`;
+    ctx.fillRect(sx, sy, 1, 1);
+  }
+  ctx.restore();
+
+  // ---- 天球平面 (y-z 平面，过原点) ----
+  if(state.showSky){
+    ctx.save();
+    ctx.translate(cx,cy);
+    ctx.beginPath(); ctx.arc(0,0, D.aS*scale, 0, Math.PI*2);
+    ctx.strokeStyle='rgba(79,214,255,.13)'; ctx.setLineDash([3,6]); ctx.lineWidth=1;
+    ctx.stroke(); ctx.setLineDash([]);
+    ctx.restore();
+  }
+
+  // ---- 视线方向 (X 轴) ----
+  ctx.save();
+  const eye = project({x: 2.55*D.aP, y:0, z:0}, w,h,scale,cx,cy);
+  const o   = project({x:0,y:0,z:0}, w,h,scale,cx,cy);
+  const grd = ctx.createLinearGradient(eye.sx,eye.sy,o.sx,o.sy);
+  grd.addColorStop(0,'rgba(255,107,107,.02)'); grd.addColorStop(1,'rgba(255,107,107,.55)');
+  ctx.strokeStyle=grd; ctx.lineWidth=2.2; ctx.setLineDash([9,7]);
+  ctx.beginPath(); ctx.moveTo(eye.sx,eye.sy); ctx.lineTo(o.sx,o.sy); ctx.stroke();
+  ctx.setLineDash([]);
+  // 箭头
+  const ang = Math.atan2(o.sy-eye.sy, o.sx-eye.sx);
+  ctx.fillStyle='rgba(255,107,107,.85)';
+  ctx.beginPath();
+  ctx.moveTo(o.sx, o.sy);
+  ctx.lineTo(o.sx - 13*Math.cos(ang-0.36), o.sy - 13*Math.sin(ang-0.36));
+  ctx.lineTo(o.sx - 13*Math.cos(ang+0.36), o.sy - 13*Math.sin(ang+0.36));
+  ctx.closePath(); ctx.fill();
+  // 眼睛图标
+  ctx.fillStyle='rgba(255,140,140,.95)';
+  ctx.beginPath(); ctx.ellipse(eye.sx+3,eye.sy,10,6,0,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#04060c';
+  ctx.beginPath(); ctx.arc(eye.sx+3,eye.sy,2.7,0,Math.PI*2); ctx.fill();
+  ctx.font='500 11px JetBrains Mono, monospace';
+  ctx.fillStyle='rgba(255,140,140,.75)';
+  ctx.fillText('视线 LOS', eye.sx-46, eye.sy-16);
+  ctx.fillText('观测者', eye.sx-22, eye.sy+22);
+  ctx.restore();
+
+  // ---- 行星轨道（由恒星轨道按比例反向映射，保证行星严格落在其上） ----
+  ctx.save();
+  ctx.strokeStyle='rgba(110,168,255,.34)'; ctx.lineWidth=1.3; ctx.setLineDash([5,5]);
+  ctx.beginPath();
+  const N=240, b=Math.sqrt(1-state.e*state.e);
+  const sP = -D.Ms/D.Mp;
+  for(let k=0;k<=N;k++){
+    const tt = k/N*2*Math.PI - Math.PI;
+    const xp = D.aS*(Math.cos(tt)-state.e)*sP;
+    const yp = D.aS*b*Math.sin(tt)*sP;
+    const w2 = state.omega*Math.PI/180, ci = Math.cos(state.inc*Math.PI/180), si = Math.sin(state.inc*Math.PI/180);
+    const X = xp*Math.cos(w2) - yp*Math.sin(w2);
+    const Y = (xp*Math.sin(w2) + yp*Math.cos(w2))*ci;
+    const Z = (xp*Math.sin(w2) + yp*Math.cos(w2))*si;
+    const p = project({x:X,y:Y,z:Z}, w,h,scale,cx,cy);
+    k? ctx.lineTo(p.sx,p.sy) : ctx.moveTo(p.sx,p.sy);
+  }
+  ctx.stroke(); ctx.setLineDash([]);
+  ctx.restore();
+
+  // ---- 恒星轨道（真实尺度，若太小则放大显示） ----
+  ctx.save();
+  ctx.strokeStyle='rgba(255,214,107,.5)'; ctx.lineWidth=1.4; ctx.setLineDash([2,3]);
+  ctx.beginPath();
+  for(let k=0;k<=N;k++){
+    const tt = k/N*2*Math.PI - Math.PI;
+    const px = D.aS*(Math.cos(tt)-state.e), py = D.aS*b*Math.sin(tt);
+    const p = project({x:px,y:py,z:0}, w,h,starScale,cx,cy);
+    k? ctx.lineTo(p.sx,p.sy) : ctx.moveTo(p.sx,p.sy);
+  }
+  ctx.stroke(); ctx.setLineDash([]);
+  ctx.restore();
+
+  // ---- 质心 ----
+  const c0 = project({x:0,y:0,z:0}, w,h,scale,cx,cy);
+  ctx.fillStyle='#4ade80';
+  ctx.beginPath(); ctx.arc(c0.sx,c0.sy,3.4,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle='rgba(74,222,128,.45)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.arc(c0.sx,c0.sy,8,0,Math.PI*2); ctx.stroke();
+  ctx.font='400 10px JetBrains Mono, monospace'; ctx.fillStyle='rgba(74,222,128,.75)';
+  ctx.fillText('质心', c0.sx+11, c0.sy+4);
+
+  // ---- 连线 ----
+  const sp = project({x:R.x,y:R.y,z:R.z}, w,h,scale,cx,cy);
+  const pp = project({x:R.px,y:R.py,z:R.pz}, w,h,scale,cx,cy);
+  ctx.strokeStyle='rgba(255,255,255,.16)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(sp.sx,sp.sy); ctx.lineTo(pp.sx,pp.sy); ctx.stroke();
+
+  // ---- 行星 ----
+  const prad = 4 + Math.min(9, 3.2*Math.cbrt(state.Mp));
+  const pg = ctx.createRadialGradient(pp.sx-prad*.35,pp.sy-prad*.35,0,pp.sx,pp.sy,prad*2.6);
+  pg.addColorStop(0,'#cfe4ff'); pg.addColorStop(.4,'#6ea8ff'); pg.addColorStop(1,'rgba(60,110,220,0)');
+  ctx.fillStyle=pg; ctx.beginPath(); ctx.arc(pp.sx,pp.sy,prad*2.6,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#6ea8ff'; ctx.beginPath(); ctx.arc(pp.sx,pp.sy,prad,0,Math.PI*2); ctx.fill();
+  ctx.font='400 10.5px JetBrains Mono, monospace'; ctx.fillStyle='rgba(150,190,255,.8)';
+  ctx.fillText('行星', pp.sx+prad+6, pp.sy-prad-2);
+
+  // ---- 恒星（带速度矢量与辉光） ----
+  const srad = 7 + Math.min(6, 2.6*Math.cbrt(state.Mstar));
+  const vnow = R.vx;
+  const shifting = vnow > 0;
+  const glowC = shifting ? '255,120,110' : '110,190,255';
+  const sg = ctx.createRadialGradient(sp.sx,sp.sy,0,sp.sx,sp.sy,srad*4.5);
+  sg.addColorStop(0,`rgba(${glowC},.55)`); sg.addColorStop(1,`rgba(${glowC},0)`);
+  ctx.fillStyle=sg; ctx.beginPath(); ctx.arc(sp.sx,sp.sy,srad*4.5,0,Math.PI*2); ctx.fill();
+  const sg2 = ctx.createRadialGradient(sp.sx-srad*.4,sp.sy-srad*.4,0,sp.sx,sp.sy,srad);
+  sg2.addColorStop(0,'#fff8e0'); sg2.addColorStop(.55,'#ffd66b'); sg2.addColorStop(1,'#e09a20');
+  ctx.fillStyle=sg2; ctx.beginPath(); ctx.arc(sp.sx,sp.sy,srad,0,Math.PI*2); ctx.fill();
+
+  // 速度矢量（投影到视线方向的分量）
+  const vmag = Math.hypot(R.vx,R.vy,R.vz) || 1;
+  const arrowLen = 46;
+  const ax = R.vx/vmag, ay = R.vy/vmag, az = R.vz/vmag;
+  const tip = project({x:R.x+ax*D.aP*0.10, y:R.y+ay*D.aP*0.10, z:R.z+az*D.aP*0.10}, w,h,scale,cx,cy);
+  ctx.strokeStyle = shifting ? 'rgba(255,107,107,.9)' : 'rgba(79,214,255,.9)';
+  ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(sp.sx,sp.sy); ctx.lineTo(tip.sx,tip.sy); ctx.stroke();
+  const a2 = Math.atan2(tip.sy-sp.sy, tip.sx-sp.sx);
+  ctx.fillStyle = ctx.strokeStyle;
+  ctx.beginPath();
+  ctx.moveTo(tip.sx,tip.sy);
+  ctx.lineTo(tip.sx-9*Math.cos(a2-0.4), tip.sy-9*Math.sin(a2-0.4));
+  ctx.lineTo(tip.sx-9*Math.cos(a2+0.4), tip.sy-9*Math.sin(a2+0.4));
+  ctx.closePath(); ctx.fill();
+
+  // 标注
+  ctx.font='400 11px JetBrains Mono, monospace';
+  ctx.fillStyle='rgba(255,214,107,.9)';
+  ctx.fillText('恒星', sp.sx+srad+7, sp.sy+srad+4);
+  ctx.font='400 10px JetBrains Mono, monospace';
+  ctx.fillStyle = shifting ? 'rgba(255,130,120,.95)' : 'rgba(120,200,255,.95)';
+  const vtxt = `v_r = ${vrOf(state.t)>=0?'+':''}${vrOf(state.t).toFixed(2)} km/s  ${shifting?'红移 ▶':'◀ 蓝移'}`;
+  ctx.fillText(vtxt, sp.sx+srad+7, sp.sy+srad+18);
+
+  $('orbitNote').textContent =
+    `a★ = ${(D.aS/1e9).toFixed(3)} Gm   |   i = ${state.inc.toFixed(1)}°   |   e = ${state.e.toFixed(3)}   |   K = ${(D.K/1000).toFixed(3)} km/s`;
+}
+
+/* ==================================================================
+   ② 光谱视图
+================================================================== */
+const LINES = [
+  {lam:5167.3, w:0.55}, {lam:5172.7, w:0.45}, {lam:5183.6, w:0.9},
+  {lam:5184.9, w:0.6},  {lam:5192.3, w:0.5},  {lam:5168.9, w:0.35}
+];
+const SPEC_C = 5183.6, SPEC_W = 5.0;
+
+function drawSpectrum(){
+  const {ctx,w,h} = setupCanvas(cvSpec);
+  ctx.clearRect(0,0,w,h);
+  ctx.fillStyle='#05070d'; ctx.fillRect(0,0,w,h);
+
+  const padL=52, padR=16, padT=13, padB=24;
+  const pw = w-padL-padR;
+  const rowH = (h-padT-padB)/2;
+
+  const vr = vrOf(state.t);
+  const dv = vr/C_KM;                       // Δλ/λ
+  const top = padT, bot = padT+rowH+6;
+
+  const xOf = lam => padL + (lam - (SPEC_C-SPEC_W/2))/SPEC_W*pw;
+
+  // 网格与波长刻度
+  ctx.strokeStyle='rgba(255,255,255,.06)'; ctx.lineWidth=1;
+  ctx.fillStyle='rgba(143,157,189,.85)'; ctx.font='400 9.5px JetBrains Mono, monospace';
+  ctx.textAlign='center';
+  for(let lam=Math.ceil(SPEC_C-SPEC_W/2); lam<=SPEC_C+SPEC_W/2; lam++){
+    const x=xOf(lam);
+    ctx.beginPath(); ctx.moveTo(x,padT-4); ctx.lineTo(x,h-padB); ctx.stroke();
+    ctx.fillText(lam.toFixed(0), x, h-padB+13);
+  }
+  ctx.textAlign='left';
+
+  // 行背景
+  const bg1=ctx.createLinearGradient(0,top,0,top+rowH);
+  bg1.addColorStop(0,'#f7f9ff'); bg1.addColorStop(1,'#c9d4ea');
+  ctx.fillStyle=bg1; ctx.fillRect(padL,top,pw,rowH);
+  const bg2=ctx.createLinearGradient(0,bot,0,bot+rowH);
+  const blueness = Math.max(-1,Math.min(1, vr/40));
+  bg2.addColorStop(0, vr>0? '#f4e6e2':'#e2ecfa');
+  bg2.addColorStop(1, vr>0? '#d8c6c2':'#c6d6f2');
+  ctx.fillStyle=bg2; ctx.fillRect(padL,bot,pw,rowH);
+  ctx.strokeStyle='rgba(255,255,255,.1)'; ctx.strokeRect(padL+.5,top+.5,pw-1,rowH-1);
+  ctx.strokeRect(padL+.5,bot+.5,pw-1,rowH-1);
+
+  // 静止参考线（顶部行）
+  ctx.strokeStyle='rgba(20,30,60,.35)'; ctx.lineWidth=1;
+  LINES.forEach(L=>{
+    const x=xOf(L.lam); if(x<padL||x>padL+pw) return;
+    ctx.beginPath(); ctx.moveTo(x,top); ctx.lineTo(x,top+rowH); ctx.stroke();
+  });
+
+  // 观测谱线（底部行），带吸收剖面
+  const drawAbs = (lamShift, alpha, color)=>{
+    LINES.forEach(L=>{
+      const lam = L.lam + lamShift;
+      const x = xOf(lam);
+      if(x < padL-30 || x > padL+pw+30) return;
+      const sig = Math.max(0.7, L.w*1.5);
+      ctx.save(); ctx.globalAlpha=alpha;
+      ctx.beginPath();
+      const step = 1.2;
+      ctx.moveTo(padL, bot);
+      for(let px=padL; px<=padL+pw; px+=step){
+        const dlam=(px-padL)/pw*SPEC_W - SPEC_W/2 - (lam-(SPEC_C-SPEC_W/2));
+        const t = Math.exp(-0.5*Math.pow(dlam/sig,2));
+        ctx.lineTo(px, bot + rowH*0.92*t);
+      }
+      ctx.lineTo(padL+pw, bot); ctx.closePath();
+      const gg=ctx.createLinearGradient(0,bot,0,bot+rowH);
+      gg.addColorStop(0,color); gg.addColorStop(1,'rgba(10,16,34,.95)');
+      ctx.fillStyle=gg; ctx.fill();
+      ctx.restore();
+    });
+  };
+  drawAbs(SPEC_C, 0, 'rgba(20,30,60,.28)');          // 静止基线（叠加在顶部行下方）
+  drawAbs(dv*SPEC_C, 1, vr>0? 'rgba(120,30,30,.85)':'rgba(20,50,140,.85)');
+
+  // 位移指示箭头
+  const dxPix = dv*SPEC_C/SPEC_W*pw;
+  if(Math.abs(dxPix) > 1.2){
+    const L5183 = LINES[2];
+    const x0=xOf(L5183.lam), x1=xOf(L5183.lam+dv*SPEC_C);
+    const yy = bot+rowH+9;
+    ctx.strokeStyle = vr>0? 'rgba(255,107,107,.95)':'rgba(79,214,255,.95)';
+    ctx.fillStyle=ctx.strokeStyle; ctx.lineWidth=1.6;
+    ctx.beginPath(); ctx.moveTo(x0,yy); ctx.lineTo(x1,yy); ctx.stroke();
+    const s = Math.sign(dxPix);
+    ctx.beginPath(); ctx.moveTo(x1,yy); ctx.lineTo(x1-6*s,yy-3.5); ctx.lineTo(x1-6*s,yy+3.5); ctx.closePath(); ctx.fill();
+  }
+
+  // 文本
+  ctx.font='500 11px JetBrains Mono, monospace';
+  ctx.fillStyle='rgba(143,157,189,.9)';
+  ctx.fillText('实验室静止波长 λ₀', padL+4, top+13);
+  ctx.fillText('实测（已平移）', padL+4, bot+13);
+  ctx.textAlign='right';
+  ctx.font='500 12px JetBrains Mono, monospace';
+  ctx.fillStyle = vr>0? '#ff8a7a' : '#7fd8ff';
+  ctx.fillText(`v_r = ${vr>=0?'+':''}${vr.toFixed(3)} km/s`, w-padR, bot-7);
+  ctx.font='400 9.5px JetBrains Mono, monospace';
+  ctx.fillStyle='rgba(143,157,189,.8)';
+  ctx.fillText(`Δλ/λ = ${(dv*1e9).toFixed(2)}×10⁻⁹`, w-padR, top+13);
+  ctx.textAlign='left';
+}
+
+/* ==================================================================
+   ③ 视向速度曲线
+================================================================== */
+function drawRV(){
+  const {ctx,w,h} = setupCanvas(cvRv);
+  ctx.clearRect(0,0,w,h);
+  ctx.fillStyle='#05070d'; ctx.fillRect(0,0,w,h);
+
+  const padL=54, padR=14, padT=14, padB=28;
+  const pw=w-padL-padR, ph=h-padT-padB;
+
+  const nCycles = 3;
+  // x 轴范围自适应：至少显示 3 个周期，若有更长观测则扩展到最大观测时间
+  let tMaxObs = 0;
+  for(const o of obs){ if(o.t > tMaxObs) tMaxObs = o.t; }
+  const Tmax = Math.max(state.P*nCycles, tMaxObs*1.02);
+  const foldP = state.fold ? state.P : Tmax;
+
+  // 振幅范围
+  let amp = Math.max(D.K/1000, 1) * 1.35;
+  const gRange = Math.abs(state.gamma);
+  amp = Math.max(amp, gRange*1.2);
+  // 拟合滑块范围
+  const kFitKm = state.Kfit/1000;
+  amp = Math.max(amp, kFitKm*1.25, gRange*1.15);
+  const yOf = v => padT + ph/2 - (v/amp)*(ph/2);
+  const xOf = t => padL + (state.fold ? ((t%state.P)+state.P)%state.P/foldP : t/Tmax)*pw;
+
+  // 网格
+  ctx.strokeStyle='rgba(255,255,255,.055)'; ctx.lineWidth=1;
+  ctx.fillStyle='rgba(143,157,189,.8)'; ctx.font='400 9.5px JetBrains Mono, monospace';
+  ctx.textAlign='right';
+  const vStep = niceStep(amp*2/5);
+  for(let v=-Math.ceil(amp/vStep)*vStep; v<=amp; v+=vStep){
+    const y=yOf(v);
+    ctx.strokeStyle = Math.abs(v)<1e-9 ? 'rgba(255,255,255,.2)' : 'rgba(255,255,255,.055)';
+    ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(padL+pw,y); ctx.stroke();
+    ctx.fillText(v.toFixed(vStep<1?1:0), padL-7, y+3.5);
+  }
+  ctx.textAlign='center';
+  const nT = state.fold? 6 : nCycles*3;
+  for(let k=0;k<=nT;k++){
+    const x=padL+pw*k/nT;
+    ctx.strokeStyle='rgba(255,255,255,.04)';
+    ctx.beginPath(); ctx.moveTo(x,padT); ctx.lineTo(x,padT+ph); ctx.stroke();
+    ctx.fillText((foldP*k/nT).toFixed(state.fold?1:0), x, padT+ph+15);
+  }
+  ctx.textAlign='left';
+  ctx.fillText(state.fold? '轨道相位 [天]' : '时间 [天]', padL+2, padT+ph+15);
+  ctx.save(); ctx.translate(13, padT+ph/2); ctx.rotate(-Math.PI/2); ctx.textAlign='center';
+  ctx.fillText('v_r  [km/s]', 0,0); ctx.restore();
+
+  // 零线
+  ctx.strokeStyle='rgba(255,255,255,.2)'; ctx.setLineDash([4,4]);
+  ctx.beginPath(); ctx.moveTo(padL,yOf(0)); ctx.lineTo(padL+pw,yOf(0)); ctx.stroke(); ctx.setLineDash([]);
+
+  // 数据点（全部显示，x 轴已自适应到含所有数据）
+  obs.forEach(o=>{
+    const x=xOf(o.t), y=yOf(o.v);
+    ctx.fillStyle='rgba(255,255,255,.85)';
+    ctx.beginPath(); ctx.arc(x,y,2.2,0,Math.PI*2); ctx.fill();
+  });
+
+  // 拟合曲线（用户滑块）
+  ctx.strokeStyle='rgba(255,107,107,.85)'; ctx.lineWidth=1.6;
+  ctx.beginPath();
+  const N=500;
+  for(let k=0;k<=N;k++){
+    const tt = state.fold ? foldP*k/N : Tmax*k/N;
+    const v = fitModel(tt);
+    const x = padL + k/N*pw, y = yOf(v);
+    k?ctx.lineTo(x,y):ctx.moveTo(x,y);
+  }
+  ctx.stroke();
+
+  // 真实模型曲线
+  if(state.showModel){
+    ctx.strokeStyle='rgba(79,214,255,.5)'; ctx.lineWidth=1.2; ctx.setLineDash([6,4]);
+    ctx.beginPath();
+    for(let k=0;k<=N;k++){
+      const tt = state.fold ? foldP*k/N : Tmax*k/N;
+      const v = state.fold ? modelFold(tt) : vrOf(tt);
+      const x = padL + k/N*pw, y = yOf(v);
+      k?ctx.lineTo(x,y):ctx.moveTo(x,y);
+    }
+    ctx.stroke(); ctx.setLineDash([]);
+  }
+
+  // K 包络标注
+  const yK = yOf(state.Kfit/1000 + state.gamma), yK2 = yOf(-state.Kfit/1000 + state.gamma);
+  ctx.strokeStyle='rgba(255,107,107,.25)'; ctx.lineWidth=1; ctx.setLineDash([2,4]);
+  ctx.beginPath(); ctx.moveTo(padL+pw-52,yK); ctx.lineTo(padL+pw,yK);
+  ctx.moveTo(padL+pw-52,yK2); ctx.lineTo(padL+pw,yK2); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle='rgba(255,140,130,.9)'; ctx.font='400 9.5px JetBrains Mono, monospace'; ctx.textAlign='right';
+  ctx.fillText(`K=${state.Kfit.toFixed(1)}m/s`, padL+pw, yK-4);
+
+  // 播放头
+  const ph_x = xOf(state.t);
+  if(!state.fold && ph_x<=padL+pw+1){
+    ctx.strokeStyle='rgba(124,107,255,.75)'; ctx.lineWidth=1.4;
+    ctx.beginPath(); ctx.moveTo(ph_x,padT); ctx.lineTo(ph_x,padT+ph); ctx.stroke();
+    ctx.fillStyle='#7c6bff';
+    ctx.beginPath(); ctx.moveTo(ph_x,padT); ctx.lineTo(ph_x-4.5,padT-7); ctx.lineTo(ph_x+4.5,padT-7); ctx.closePath(); ctx.fill();
+  }
+
+  // 图例
+  ctx.font='400 9.5px JetBrains Mono, monospace'; ctx.textAlign='left';
+  const lg = [['rgba(79,214,255,.8)','真实模型'],['rgba(255,107,107,.9)','你的拟合'],['rgba(255,255,255,.8)','观测点']];
+  let lx = padL+8;
+  lg.forEach(([c,t])=>{
+    ctx.fillStyle=c; ctx.fillRect(lx, padT+5, 8, 3);
+    ctx.fillStyle='rgba(143,157,189,.85)'; ctx.fillText(t, lx+12, padT+10);
+    lx += 12 + ctx.measureText(t).width + 16;
+  });
+}
+
+function niceStep(x){
+  const p = Math.pow(10, Math.floor(Math.log10(x)));
+  const r = x/p;
+  return (r<1.5?1:r<3?2:r<7?5:10)*p;
+}
+
+/* 用户拟合模型：用拟合出的 P、K，配合真实 e、ω，给出 v_r 预测曲线 */
+function fitModel(t){
+  const P = state.Pfit*DAY, K = state.Kfit/1000;
+  const w = state.omega*Math.PI/180;
+  const n = 2*Math.PI/P;
+  const M = n*(t*DAY);
+  const E = keplerE(M, state.e);
+  // 真近点角 ν
+  const nu = 2*Math.atan2(Math.sqrt(1+state.e)*Math.sin(E/2),
+                          Math.sqrt(1-state.e)*Math.cos(E/2));
+  return K*(Math.cos(nu+w) + state.e*Math.cos(w)) + state.gamma;
+}
+function modelFold(t){
+  // 折叠到 [0,P)
+  return vrOf(t + state.t0);
+}
+
+/* ==================================================================
+   ④ 反演面板
+================================================================== */
+function updateFit(){
+  recompute();
+  const Pf = state.Pfit*DAY, Kf = state.Kfit;
+  const sqe = Math.sqrt(1-state.e*state.e);
+  // M_p sin i [kg]
+  const MpSin = Kf*1000*sqe*Math.pow(D.Mt,2/3)*Math.pow(Pf/(2*Math.PI*G),1/3);
+  const MpSinJ = MpSin/MJUP;
+  const MpJ = MpSinJ/Math.sin(state.iFit*Math.PI/180);
+
+  $('rMsin').innerHTML = MpSinJ.toFixed(4)+'<span class="u">M<sub>J</sub></span>';
+  $('rMfit').innerHTML = MpJ.toFixed(4)+'<span class="u">M<sub>J</sub></span>';
+
+  // RMS（对当前窗口内的观测）
+  const Tmax = state.P*3;
+  let sum=0,cnt=0;
+  obs.forEach(o=>{
+    const m = fitModel(o.t - state.t0);
+    const d = (o.v - m)*1000;
+    sum += d*d; cnt++;
+  });
+  const rms = cnt? Math.sqrt(sum/cnt) : 0;
+  $('rRms').innerHTML = (cnt? rms.toFixed(1):'–')+'<span class="u">m/s</span>';
+
+  const truth = MpSinJ;   // 真实 M_p sin i (M_J)
+  const err = truth>0 ? (MpJ - state.Mp)/state.Mp*100 : 0;
+  const errSin = (MpSinJ - state.Mp*Math.sin(state.inc*Math.PI/180))/(state.Mp*Math.sin(state.inc*Math.PI/180))*100;
+  $('rErr').innerHTML = (cnt? (err>=0?'+':'')+err.toFixed(1) : '–')+'<span class="u">%</span>';
+
+  // 判定文字
+  let msg='';
+  if(cnt<3){
+    msg = `数据点不足（${cnt} 个）。让仿真运行一段时间，采样间隔设小一点、噪声低一点，多积累几个周期的测量再来拟合。`;
+  } else {
+    const pErr = Math.abs(state.Pfit-state.P)/state.P*100;
+    const kErr = Math.abs(state.Kfit-D.K)/Math.max(D.K,1e-9)*100;
+    if(pErr<3 && kErr<8){
+      msg = `<b style="color:var(--good)">✓ 拟合成功。</b> 周期与振幅都已锁定，`+
+            `读出 <b class="hl-c">M<sub>p</sub> sin i = ${MpSinJ.toFixed(3)} M<sub>J</sub></b>`+
+            `。但注意：这只是<b class="hl-w">质量下限</b>——真实行星质量是 `+
+            `<b class="hl-c">${state.Mp.toFixed(3)} M<sub>J</sub></b>。`+
+            (state.iFit>=89 ? `当前按 i=90° 假设，误差为 <b>${err.toFixed(1)}%</b>。` :
+             `若按你假设的 i=${state.iFit.toFixed(0)}° 反推，得到 <b>${MpJ.toFixed(3)} M<sub>J</sub></b>，`+
+             `真实值 <b>${state.Mp.toFixed(3)} M<sub>J</sub></b>，低估了 <b>${(100-MpJ/state.Mp*100).toFixed(0)}%</b>——这就是倾角退化。`);
+    } else if(pErr>=3){
+      msg = `周期偏差 <b class="hl-h">${pErr.toFixed(1)}%</b>。曲线每隔 <b class="hl-c">${state.P.toFixed(1)} 天</b> 重复一次，`+
+            `请在横轴上找「图案再次对齐」的位置，把 P<sub>fit</sub> 调到那里。`;
+    } else {
+      msg = `周期对了，但振幅偏了 <b class="hl-h">${kErr.toFixed(1)}%</b>。`+
+            `K 是数据点偏离 γ 线的最大半程：上峰 − γ 或 γ − 下峰，量一下即可。`+
+            `当前读出 <b class="hl-c">${MpSinJ.toFixed(3)} M<sub>J</sub> sin i</b>。`;
+    }
+  }
+  $('verdict').innerHTML = msg;
+}
+
+/* ==================================================================
+   读数更新
+================================================================== */
+function updateReadouts(){
+  recompute();
+  $('rK').innerHTML = (D.K/1000).toFixed(3)+'<span class="u">km/s</span>';
+  $('rAst').innerHTML = (D.aS/1e9).toFixed(3)+'<span class="u">Gm</span>';
+  $('rAp').innerHTML = (D.aP/AU).toFixed(4)+'<span class="u">AU</span>';
+  $('rKtrue').innerHTML = (D.Ktrue/1000).toFixed(3)+'<span class="u">km/s</span>';
+  const vr = vrOf(state.t);
+  $('rvr').innerHTML = (vr>=0?'+':'')+vr.toFixed(3)+'<span class="u">km/s</span>';
+  $('rN').innerHTML = obs.length+'<span class="u">/ '+(state.t/state.P).toFixed(2)+'</span>';
+}
+
+/* ==================================================================
+   仿真循环
+================================================================== */
+let last = performance.now();
+function loop(now){
+  const dtReal = Math.min((now-last)/1000, 0.1);
+  last = now;
+
+  if(state.running){
+    const dtDays = dtReal*state.speed;
+    const prevT = state.t;
+    state.t += dtDays;
+    // 采样
+    while(state.nextObs <= state.t){
+      const tt = state.nextObs;
+      const v = vrOf(tt - state.t0) + gauss()*state.sigma/1000;
+      obs.push({t: tt - state.t0, v});
+      state.nextObs += state.dtObs;
+      if(obs.length > 4000) obs.shift();
+    }
+    if(prevT!==state.t) { updateReadouts(); updateFit(); }
+  }
+
+  drawOrbit();
+  drawSpectrum();
+  drawRV();
+  requestAnimationFrame(loop);
+}
+
+let gseed = null;
+function gauss(){
+  if(gseed!==null){ const v=gseed; gseed=null; return v; }
+  let u=0,v=0,s=0;
+  do{ u=Math.random()*2-1; v=Math.random()*2-1; s=u*u+v*v; }while(s===0||s>=1);
+  const m=Math.sqrt(-2*Math.log(s)/s);
+  gseed=v*m; return u*m;
+}
+
+/* ==================================================================
+   控件绑定
+================================================================== */
+function bind(id, key, fmt, out, transform){
+  const el=$(id), lab=$(out);
+  const disp = transform || (x=>x);
+  const sync = ()=>{
+    const raw = parseFloat(el.value);
+    state[key] = disp(raw);
+    lab.innerHTML = fmt(state[key]);
+    el.style.setProperty('--p', ((raw-el.min)/(el.max-el.min)*100)+'%');
+    updateReadouts(); updateFit();
+  };
+  el.addEventListener('input', sync);
+  sync();
+  return el;
+}
+
+bind('sMstar','Mstar', x=>x.toFixed(2)+' M☉','vMstar');
+bind('sMp','Mp', x=>x.toFixed(x<0.01?5:3)+' M<sub>J</sub>','vMp');
+bind('sP','P', x=>x.toFixed(1)+' d','vP');
+bind('se','e', x=>x.toFixed(3),'ve');
+bind('sinc','inc', x=>x.toFixed(1)+'°','vinc');
+bind('som','omega', x=>x.toFixed(0)+'°','vom');
+bind('sgam','gamma', x=>x.toFixed(1)+' km/s','vgam');
+bind('sdt','dtObs', x=>x.toFixed(1)+' d','vdt');
+bind('ssig','sigma', x=>x.toFixed(1)+' m/s','vsig');
+bind('sspd','speed', x=>x.toFixed(1)+' d/s','vspd');
+bind('sPfit','Pfit', x=>x.toFixed(1)+' d','vPfit');
+bind('sKfit','Kfit', x=>x.toFixed(1)+' m/s','vKfit');
+bind('siFit','iFit', x=>x.toFixed(0)+'°','viFit');
+
+$('cModel').addEventListener('change',e=>state.showModel=e.target.checked);
+$('cPhase').addEventListener('change',e=>state.fold=e.target.checked);
+$('cSky').addEventListener('change',e=>state.showSky=e.target.checked);
+
+$('bPlay').addEventListener('click', togglePlay);
+function togglePlay(){
+  state.running=!state.running;
+  $('bPlay').textContent = state.running? '⏸ 暂停' : '▶ 播放';
+}
+$('bStep').addEventListener('click', ()=>{
+  state.t += state.P;
+  state.nextObs = Math.min(state.nextObs, state.t);
+  updateReadouts(); updateFit();
+});
+$('bClear').addEventListener('click', clearObs);
+function clearObs(){
+  obs.length=0; state.nextObs=0; state.t0=state.t;
+  updateReadouts(); updateFit();
+}
+$('bView').addEventListener('click', ()=>{ state.viewMode=(state.viewMode+1)%4; });
+$('bAuto').addEventListener('click', ()=>{
+  state.Pfit = state.P; state.Kfit = D.K/1000; state.iFit = state.inc;
+  $('sPfit').value=state.Pfit; $('sKfit').value=state.Kfit; $('siFit').value=state.iFit;
+  ['sPfit','sKfit','siFit'].forEach(id=>{
+    const el=$(id); el.style.setProperty('--p',((el.value-el.min)/(el.max-el.min)*100)+'%');
+  });
+  $('vPfit').textContent=state.Pfit.toFixed(1)+' d';
+  $('vKfit').textContent=state.Kfit.toFixed(1)+' m/s';
+  $('viFit').textContent=state.iFit.toFixed(0)+'°';
+  updateFit();
+});
+
+// 视角拖动
+let dragging=false, lastX=0, lastY=0;
+cvOrbit.addEventListener('pointerdown', e=>{dragging=true; lastX=e.clientX; lastY=e.clientY; state.viewMode=-1; cvOrbit.setPointerCapture(e.pointerId);});
+cvOrbit.addEventListener('pointermove', e=>{
+  if(!dragging) return;
+  camAz += (e.clientX-lastX)*0.006;
+  camEl = Math.max(-1.4, Math.min(1.4, camEl + (e.clientY-lastY)*0.005));
+  lastX=e.clientX; lastY=e.clientY;
+});
+cvOrbit.addEventListener('pointerup', ()=>dragging=false);
+cvOrbit.addEventListener('pointercancel', ()=>dragging=false);
+
+window.addEventListener('keydown', e=>{
+  if(e.target.tagName==='INPUT' && e.target.type!=='range') return;
+  if(e.code==='Space'){ e.preventDefault(); togglePlay(); }
+  else if(e.key==='c'||e.key==='C'){ clearObs(); }
+  else if(e.key==='r'||e.key==='R'){ resetAll(); }
+});
+
+function resetAll(){
+  state.t=0; state.t0=0; state.nextObs=0; obs.length=0;
+  state.Mp=1; state.P=365; state.e=0.1; state.inc=60; state.Mstar=1; state.omega=0; state.gamma=0;
+  $('sMp').value=1; $('sP').value=365; $('se').value=0.1; $('sinc').value=60;
+  $('sMstar').value=1; $('som').value=0; $('sgam').value=0;
+  ['sMp','sP','se','sinc','sMstar','som','sgam'].forEach(id=>{
+    const el=$(id); el.style.setProperty('--p',((el.value-el.min)/(el.max-el.min)*100)+'%');
+  });
+  $('vMp').innerHTML='1.000 M<sub>J</sub>'; $('vP').textContent='365.0 d';
+  $('ve').textContent='0.100'; $('vinc').textContent='60.0°';
+  $('vMstar').textContent='1.00 M☉'; $('vom').textContent='0°'; $('vgam').textContent='0.0 km/s';
+  updateReadouts(); updateFit();
+}
+
+/* 尺寸自适应 */
+let rzT=null;
+window.addEventListener('resize', ()=>{
+  clearTimeout(rzT);
+  rzT=setTimeout(()=>{ drawOrbit(); drawSpectrum(); drawRV(); }, 90);
+});
+
+/* 启动 */
+recompute();
+// 让反演面板初始贴近真值（用户仍可手动改动来体验拟合过程）
+state.Pfit = state.P;
+state.Kfit = D.K/1000;
+state.iFit = 90;
+$('sPfit').value = state.Pfit; $('sKfit').value = state.Kfit; $('siFit').value = state.iFit;
+$('vPfit').textContent = state.Pfit.toFixed(1)+' d';
+$('vKfit').textContent = state.Kfit.toFixed(1)+' m/s';
+$('viFit').textContent = state.iFit.toFixed(0)+'°';
+['sPfit','sKfit','siFit'].forEach(id=>{
+  const el=$(id); el.style.setProperty('--p',((el.value-el.min)/(el.max-el.min)*100)+'%');
+});
+updateReadouts();
+updateFit();
+state.nextObs = 0;
+requestAnimationFrame(loop);
+</script>
+<script>
+/* KaTeX 渲染：把 data-tex 渲染为公式；失败则保留原纯文本 */
+window.addEventListener('load', function(){
+  if(!window.katex) return;
+  document.querySelectorAll('.eqblock[data-tex], .eq[data-tex]').forEach(function(el){
+    try{
+      window.katex.render(el.getAttribute('data-tex'), el, {displayMode:true, throwOnError:false, output:'html'});
+    }catch(e){ /* 保留回退文本 */ }
+  });
+});
+</script>
+</body>
+</html>
